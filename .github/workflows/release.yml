@@ -1,0 +1,126 @@
+name: Release
+
+# Puts the .vsix for the version on main into a GitHub Release.
+#
+# On a push to main it reads the version from package.json and asks whether
+# the release v<version> exists. If it does, nothing happens; if it does not,
+# the extension is tested, packaged and released. So the version bump in
+# package.json is what releases, not the push.
+#
+# Nothing here leaves GitHub — the Marketplace is not touched — and all of it
+# can be undone: a release can be deleted and its tag with it.
+#
+# Started by hand with `dry_run` it builds and tests the same package and
+# leaves it on the run as an artifact, releasing nothing.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Build and test only; do not create a release'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+# Two pushes in quick succession must not both find the release missing.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Package and release
+    runs-on: ubuntu-latest
+    permissions:
+      # To create the release and the tag it points at.
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Decide whether this version needs releasing
+        id: plan
+        run: |
+          set -euo pipefail
+          version=$(node -p "require('./package.json').version")
+          tag="v$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dry_run }}" = "true" ]; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "Dry run: $tag will be built and tested, not released."
+          elif gh release view "$tag" > /dev/null 2>&1; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "build=false" >> "$GITHUB_OUTPUT"
+            echo "$tag is already released; nothing to do."
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "$tag is not released yet."
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.plan.outputs.build != 'false'
+        with:
+          node-version: '22.x'
+          cache: npm
+
+      - name: Test
+        if: steps.plan.outputs.build != 'false'
+        run: |
+          npm ci
+          npm test
+
+      - name: Package
+        if: steps.plan.outputs.build != 'false'
+        id: package
+        run: |
+          set -euo pipefail
+          file="manul-browser-${{ steps.plan.outputs.version }}.vsix"
+          npx vsce package --out "$file"
+          sha256sum "$file" > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+          echo "file=$file" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        if: steps.plan.outputs.build != 'false'
+        with:
+          name: vsix
+          path: |
+            ${{ steps.package.outputs.file }}
+            SHA256SUMS.txt
+          if-no-files-found: error
+
+      - name: Release
+        if: steps.plan.outputs.release == 'true'
+        run: |
+          set -euo pipefail
+          version="${{ steps.plan.outputs.version }}"
+          file="${{ steps.package.outputs.file }}"
+
+          # The notes are this version's section of the changelog, so the
+          # release says what the changelog says and nothing has to be
+          # written twice.
+          awk -v v="$version" '
+            /^## / { on = ($2 == v); next }
+            on { print }
+          ' CHANGELOG.md > notes.md
+          {
+            echo
+            echo '### Install'
+            echo
+            echo "Download \`$file\` below, then:"
+            echo
+            echo '```'
+            echo "code --install-extension $file"
+            echo '```'
+          } >> notes.md
+
+          gh release create "${{ steps.plan.outputs.tag }}" "$file" SHA256SUMS.txt \
+            --target "$GITHUB_SHA" \
+            --title "Manul Browser $version" \
+            --notes-file notes.md
