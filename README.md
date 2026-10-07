@@ -167,6 +167,9 @@ npm test            # unit tests, no browser needed
 npm run package     # builds the .vsix
 ```
 
+A push to `main` whose `package.json` version has no GitHub Release yet gets
+one, with the `.vsix` attached: bumping the version is what releases.
+
 `src/core` has no dependency on VS Code and holds everything worth testing in
 isolation: finding the engine, finding and reading hook scripts, mapping the
 engine's results back to lines. `src/test/integration` runs inside a real VS
