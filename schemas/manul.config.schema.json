@@ -1,0 +1,126 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "manul.config.json",
+  "description": "Configuration for the manul-browser engine. Command-line flags override these values; environment variables override the file.",
+  "type": "object",
+  "properties": {
+    "headless": {
+      "type": "boolean",
+      "description": "Run browser in headless mode (no visible window). Environment variable: MANUL_HEADLESS.",
+      "default": false
+    },
+    "browser": {
+      "type": "string",
+      "enum": [
+        "chromium",
+        "firefox"
+      ],
+      "description": "Which browser engine to launch. `chromium` (the default) is driven over CDP; `firefox` is driven over WebDriver BiDi, because Firefox deprecated CDP in 129 and removed it in 141. WebKit/Safari are not supported. Use `channel`/`executable_path` to pick a specific binary. An unrecognised value is an error, not a silent fall back to Chromium. Environment variable: MANUL_BROWSER."
+    },
+    "browser_args": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Extra launch flags passed to the browser. JSON: native array. Env: comma-or-space-separated string. Environment variable: MANUL_BROWSER_ARGS.",
+      "default": []
+    },
+    "timeout": {
+      "type": "integer",
+      "description": "Default action timeout for click, fill, select, hover operations. Environment variable: MANUL_TIMEOUT.",
+      "default": 5000
+    },
+    "nav_timeout": {
+      "type": "integer",
+      "description": "Navigation timeout for NAVIGATE, page loads, and WAIT FOR RESPONSE. Environment variable: MANUL_NAV_TIMEOUT.",
+      "default": 30000
+    },
+    "semantic_cache_enabled": {
+      "type": "boolean",
+      "description": "Enable in-session semantic cache (learned_elements). Feeds the scorer as one channel (never bypasses scoring); provides a +200,000 scaled score boost within a single run. Resets when the engine instance is destroyed. Environment variable: MANUL_SEMANTIC_CACHE_ENABLED.",
+      "default": true
+    },
+    "custom_controls_dirs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Directories scanned for @custom_control Go handlers. Resolved relative to CWD. Env: comma-separated. Environment variable: MANUL_CUSTOM_CONTROLS_DIRS.",
+      "default": [
+        "controls"
+      ]
+    },
+    "log_name_maxlen": {
+      "type": "integer",
+      "description": "If > 0, truncates element names in console log output to this many characters. Environment variable: MANUL_LOG_NAME_MAXLEN.",
+      "default": 0
+    },
+    "log_thought_maxlen": {
+      "type": "integer",
+      "description": "If > 0, truncates verbose 'thought'/diagnostic strings in console log output. Environment variable: MANUL_LOG_THOUGHT_MAXLEN.",
+      "default": 0
+    },
+    "workers": {
+      "type": "integer",
+      "description": "Max hunt files to run in parallel. Each worker spawns a separate subprocess with its own browser. Forced to 1 when --debug or --break-lines is active. Environment variable: MANUL_WORKERS.",
+      "default": 1
+    },
+    "tests_home": {
+      "type": "string",
+      "description": "Default directory for new hunt files, SCAN PAGE output, and manul scan default output. JSON-only — no env var override."
+    },
+    "auto_annotate": {
+      "type": "boolean",
+      "description": "Automatically inject '# 📍 Auto-Nav: <name>' comments into .hunt files whenever the page URL changes during a run. Page names from pages.json. Environment variable: MANUL_AUTO_ANNOTATE.",
+      "default": false
+    },
+    "channel": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Browser channel — selects an installed binary of the engine named by `browser` (chrome, msedge, chromium, firefox-esr, firefox-nightly, ...). An unknown value is treated as a bare binary name to look up on PATH. Environment variable: MANUL_CHANNEL.",
+      "default": null
+    },
+    "executable_path": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Absolute path to a custom browser or Electron app executable. Used with OPEN APP command for desktop automation. Environment variable: MANUL_EXECUTABLE_PATH.",
+      "default": null
+    },
+    "cdp_endpoint": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The endpoint to dial when attaching. Its scheme selects the protocol: an HTTP endpoint (e.g. http://127.0.0.1:9222) is CDP/Chromium, a WebSocket URL (e.g. ws://127.0.0.1:9222/session) is WebDriver BiDi/Firefox — a bare ws://host:port, as Firefox prints it at startup, gets /session appended. Defaults to http://127.0.0.1:9222 in attach mode. Setting it also *implies* attach when browser_mode is empty — inference kept for existing configs; prefer setting browser_mode explicitly. Environment variable: MANUL_CDP_ENDPOINT.",
+      "default": null
+    },
+    "retries": {
+      "type": "integer",
+      "description": "Number of times to retry a failed hunt file. Pass on retry marks status as 'flaky'. Environment variable: MANUL_RETRIES.",
+      "default": 0
+    },
+    "screenshot": {
+      "type": "string",
+      "enum": [
+        "on-fail",
+        "always",
+        "none"
+      ],
+      "description": "Screenshot capture mode for hunt runs: PNG files under screenshots/ in the working directory, recorded on each step result as screenshot_path and linked from the HTML report. Environment variable: MANUL_SCREENSHOT."
+    },
+    "html_report": {
+      "type": "boolean",
+      "description": "Generate self-contained HTML report after the run (reports/manul_report.html). Recent invocations merged via report session state. Environment variable: MANUL_HTML_REPORT.",
+      "default": false
+    },
+    "explain_mode": {
+      "type": "boolean",
+      "description": "Print detailed per-channel heuristic score breakdown for each element resolution. Environment variable: MANUL_EXPLAIN.",
+      "default": false
+    }
+  }
+}

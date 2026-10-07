@@ -1,0 +1,233 @@
+{
+  "name": "Hunt",
+  "scopeName": "source.hunt",
+  "fileTypes": [
+    "hunt"
+  ],
+  "patterns": [
+    {
+      "include": "#comment"
+    },
+    {
+      "include": "#metadata"
+    },
+    {
+      "include": "#step-header"
+    },
+    {
+      "include": "#step-number"
+    },
+    {
+      "include": "#done-keyword"
+    },
+    {
+      "include": "#verify-keyword"
+    },
+    {
+      "include": "#conditional-keyword"
+    },
+    {
+      "include": "#loop-keyword"
+    },
+    {
+      "include": "#set-command"
+    },
+    {
+      "include": "#system-keyword"
+    },
+    {
+      "include": "#action-verb"
+    },
+    {
+      "include": "#quoted-single"
+    },
+    {
+      "include": "#quoted-double"
+    },
+    {
+      "include": "#variable"
+    },
+    {
+      "include": "#url"
+    },
+    {
+      "include": "#modifier"
+    }
+  ],
+  "repository": {
+    "comment": {
+      "name": "comment.line.number-sign.hunt",
+      "match": "^\\s*#.*$"
+    },
+    "metadata": {
+      "patterns": [
+        {
+          "name": "meta.annotation.hunt",
+          "match": "^(@context|@title|@blueprint|@tags|@data|@schedule|@import|@export)(:)(.*)$",
+          "captures": {
+            "1": {
+              "name": "keyword.other.metadata.hunt"
+            },
+            "2": {
+              "name": "punctuation.separator.hunt"
+            },
+            "3": {
+              "name": "string.unquoted.metadata.value.hunt"
+            }
+          }
+        },
+        {
+          "name": "meta.variable-declaration.hunt",
+          "match": "^(@var)(:)\\s*(\\{?\\w+\\}?)\\s*(=)\\s*(.*)",
+          "captures": {
+            "1": {
+              "name": "keyword.other.metadata.hunt"
+            },
+            "2": {
+              "name": "punctuation.separator.hunt"
+            },
+            "3": {
+              "name": "variable.other.hunt"
+            },
+            "4": {
+              "name": "keyword.operator.assignment.hunt"
+            },
+            "5": {
+              "name": "string.unquoted.metadata.value.hunt"
+            }
+          }
+        },
+        {
+          "name": "meta.script-alias.hunt",
+          "match": "^(@script)(:)\\s*(\\{?\\w+\\}?)\\s*(=)\\s*(.*)",
+          "captures": {
+            "1": {
+              "name": "keyword.other.metadata.hunt"
+            },
+            "2": {
+              "name": "punctuation.separator.hunt"
+            },
+            "3": {
+              "name": "variable.other.hunt"
+            },
+            "4": {
+              "name": "keyword.operator.assignment.hunt"
+            },
+            "5": {
+              "name": "string.unquoted.metadata.value.hunt"
+            }
+          }
+        },
+        {
+          "name": "meta.hook-marker.hunt",
+          "match": "^\\s*(\\[(?:END\\s+)?(?:SETUP|TEARDOWN)\\])\\s*$",
+          "captures": {
+            "1": {
+              "name": "keyword.control.hook.hunt"
+            }
+          }
+        }
+      ]
+    },
+    "step-header": {
+      "name": "meta.step-header.hunt",
+      "match": "(?i)^\\s*(?:\\d+\\.\\s*)?\\b(STEP)\\s*(\\d*)\\s*(:)\\s*(.*)",
+      "captures": {
+        "1": {
+          "name": "keyword.control.step.hunt"
+        },
+        "2": {
+          "name": "constant.numeric.step-number.hunt"
+        },
+        "3": {
+          "name": "punctuation.separator.hunt"
+        },
+        "4": {
+          "name": "entity.name.section.hunt"
+        }
+      }
+    },
+    "step-number": {
+      "match": "^\\s*(\\d+\\.)",
+      "captures": {
+        "1": {
+          "name": "constant.numeric.step-number.hunt"
+        }
+      }
+    },
+    "done-keyword": {
+      "name": "keyword.control.hunt",
+      "match": "(?i)\\bDONE\\b\\.?"
+    },
+    "conditional-keyword": {
+      "name": "keyword.control.conditional.hunt",
+      "match": "(?i)\\b(IF|ELIF|ELSE)\\b"
+    },
+    "loop-keyword": {
+      "name": "keyword.control.loop.hunt",
+      "match": "(?i)\\b(REPEAT|FOR\\s+EACH|WHILE|TIMES|END\\s*(?:IF|REPEAT|WHILE|FOR(?:\\s+EACH)?))\\b"
+    },
+    "set-command": {
+      "name": "meta.set-command.hunt",
+      "match": "(?i)\\b(SET)\\s+(\\{?\\w+\\}?)\\s*(=)\\s*(.*)",
+      "captures": {
+        "1": {
+          "name": "storage.type.hunt"
+        },
+        "2": {
+          "name": "variable.other.hunt"
+        },
+        "3": {
+          "name": "keyword.operator.assignment.hunt"
+        },
+        "4": {
+          "name": "string.unquoted.value.hunt"
+        }
+      }
+    },
+    "verify-keyword": {
+      "name": "support.function.verify.hunt",
+      "match": "(?i)\\b(VERIFY VISUAL|VERIFY SOFTLY|VERIFY that|VERIFY)\\b"
+    },
+    "system-keyword": {
+      "name": "storage.type.hunt",
+      "match": "(?i)\\b(NAVIGATE to|NAVIGATE|OPEN\\s+APP|EXTRACT|SCROLL DOWN|SCROLL|PRESS ENTER|PRESS|RIGHT CLICK|UPLOAD|MOCK\\s+(?:GET|POST|PUT|PATCH|DELETE)|WAIT FOR RESPONSE|WAIT FOR SELECTOR|WAIT FOR|WAIT|DOUBLE CLICK|CLICK|HOVER|CALL HOST|CALL PYTHON|CALL GO|CALL JS|CALL NODE|USE|HIGHLIGHT|FULL SCAN|SCAN PAGE|SET|PRINT|SCREENSHOT|DEBUG VARS|DEBUG|PAUSE)\\b"
+    },
+    "action-verb": {
+      "name": "entity.name.function.action.hunt",
+      "match": "(?i)\\b(Fill|Type|Select|Choose|Check|Uncheck|Drag|Drop|Locate|Enter)\\b"
+    },
+    "quoted-single": {
+      "name": "string.quoted.single.hunt",
+      "begin": "'",
+      "end": "'",
+      "patterns": [
+        {
+          "include": "#variable"
+        }
+      ]
+    },
+    "quoted-double": {
+      "name": "string.quoted.double.hunt",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "include": "#variable"
+        }
+      ]
+    },
+    "variable": {
+      "name": "variable.other.hunt",
+      "match": "\\{[a-zA-Z_][a-zA-Z0-9_]*\\}"
+    },
+    "url": {
+      "name": "markup.underline.link.hunt",
+      "match": "https?://[^\\s]+"
+    },
+    "modifier": {
+      "name": "keyword.other.modifier.hunt",
+      "match": "(?i)\\b(if exists|optional|NOT|DISABLED|ENABLED|SOFTLY|VISUAL|ON HEADER|ON FOOTER|is present|is checked|is NOT checked|is NOT present|be visible|be hidden|disappear|into|from|to|that|the|with|near|inside|on|header|footer|row|field|button|link|checkbox|dropdown|input|has|text|placeholder|value|args|exists|contains|in)\\b"
+    }
+  }
+}

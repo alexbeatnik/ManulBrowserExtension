@@ -1,0 +1,535 @@
+{
+  "name": "manul-browser",
+  "displayName": "Manul Browser",
+  "description": "Write and run browser automation in plain English. Runs .hunt files with the manul-browser engine from npm, PyPI or a Go build, with a test explorer, step-by-step debugging and automatic hook pickup.",
+  "version": "0.1.0",
+  "publisher": "alexbeatnik",
+  "license": "Apache-2.0",
+  "author": "Oleksii Poliakov",
+  "icon": "images/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alexbeatnik/ManulBrowserExtension"
+  },
+  "bugs": {
+    "url": "https://github.com/alexbeatnik/ManulBrowserExtension/issues"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Testing",
+    "Programming Languages",
+    "Debuggers"
+  ],
+  "keywords": [
+    "hunt",
+    "manul",
+    "browser-automation",
+    "e2e",
+    "testing"
+  ],
+  "activationEvents": [
+    "workspaceContains:**/*.hunt"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "hunt",
+        "aliases": [
+          "Hunt",
+          "Manul Hunt"
+        ],
+        "extensions": [
+          ".hunt"
+        ],
+        "icon": {
+          "light": "images/hunt-file.png",
+          "dark": "images/hunt-file.png"
+        },
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "hunt",
+        "scopeName": "source.hunt",
+        "path": "./syntaxes/hunt.tmLanguage.json"
+      }
+    ],
+    "breakpoints": [
+      {
+        "language": "hunt"
+      }
+    ],
+    "jsonValidation": [
+      {
+        "fileMatch": "manul.config.json",
+        "url": "./schemas/manul.config.schema.json"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "manulBrowser",
+          "title": "Manul Browser",
+          "icon": "images/activity.svg"
+        }
+      ]
+    },
+    "views": {
+      "manulBrowser": [
+        {
+          "type": "webview",
+          "id": "manulBrowser.dashboard",
+          "name": "Run"
+        },
+        {
+          "id": "manulBrowser.hooks",
+          "name": "Hooks"
+        },
+        {
+          "type": "webview",
+          "id": "manulBrowser.steps",
+          "name": "Step Palette",
+          "visibility": "collapsed"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "manulBrowser.hooks",
+        "contents": "No hook script found.\n\nA hook script holds custom controls, CALL handlers and suite hooks such as before_all. One named manul_hooks.py or manul_hooks.mjs, at or above a hunt file, is passed to the engine automatically.\n\n[Create Hook Script](command:manulBrowser.createHooks)"
+      }
+    ],
+    "commands": [
+      {
+        "command": "manulBrowser.runFile",
+        "title": "Run Hunt File",
+        "category": "Manul",
+        "icon": "$(play)"
+      },
+      {
+        "command": "manulBrowser.debugFile",
+        "title": "Debug Hunt File",
+        "category": "Manul",
+        "icon": "$(debug-alt)"
+      },
+      {
+        "command": "manulBrowser.runInTerminal",
+        "title": "Run in Terminal",
+        "category": "Manul",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "manulBrowser.stop",
+        "title": "Stop Run",
+        "category": "Manul",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "manulBrowser.debugNext",
+        "title": "Debug: Next Step",
+        "category": "Manul",
+        "icon": "$(debug-step-over)"
+      },
+      {
+        "command": "manulBrowser.debugContinue",
+        "title": "Debug: Continue",
+        "category": "Manul",
+        "icon": "$(debug-continue)"
+      },
+      {
+        "command": "manulBrowser.debugExplain",
+        "title": "Debug: Explain Next Step",
+        "category": "Manul",
+        "icon": "$(lightbulb)"
+      },
+      {
+        "command": "manulBrowser.debugHighlight",
+        "title": "Debug: Show Target in Browser",
+        "category": "Manul",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "manulBrowser.newHunt",
+        "title": "New Hunt File",
+        "category": "Manul",
+        "icon": "$(new-file)"
+      },
+      {
+        "command": "manulBrowser.record",
+        "title": "Record a Hunt from a URL",
+        "category": "Manul",
+        "icon": "$(record)"
+      },
+      {
+        "command": "manulBrowser.scan",
+        "title": "Scan a URL into a Draft Hunt",
+        "category": "Manul",
+        "icon": "$(search)"
+      },
+      {
+        "command": "manulBrowser.insertStep",
+        "title": "Insert Step…",
+        "category": "Manul",
+        "icon": "$(add)"
+      },
+      {
+        "command": "manulBrowser.selectEngine",
+        "title": "Select Engine",
+        "category": "Manul",
+        "icon": "$(server-process)"
+      },
+      {
+        "command": "manulBrowser.doctor",
+        "title": "Check Setup (Doctor)",
+        "category": "Manul",
+        "icon": "$(pulse)"
+      },
+      {
+        "command": "manulBrowser.openReport",
+        "title": "Open HTML Report",
+        "category": "Manul",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "manulBrowser.openConfig",
+        "title": "Open manul.config.json",
+        "category": "Manul",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "manulBrowser.showOutput",
+        "title": "Show Output",
+        "category": "Manul",
+        "icon": "$(output)"
+      },
+      {
+        "command": "manulBrowser.clearResults",
+        "title": "Clear Results from Editor",
+        "category": "Manul",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "manulBrowser.refreshHooks",
+        "title": "Refresh Hooks",
+        "category": "Manul",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "manulBrowser.createHooks",
+        "title": "Create Hook Script",
+        "category": "Manul",
+        "icon": "$(add)"
+      },
+      {
+        "command": "manulBrowser.toggleHooks",
+        "title": "Turn Hook Pickup On or Off",
+        "category": "Manul",
+        "icon": "$(plug)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "manulBrowser.runFile",
+          "when": "resourceLangId == hunt && !manulBrowser.running",
+          "group": "navigation@1"
+        },
+        {
+          "command": "manulBrowser.debugFile",
+          "when": "resourceLangId == hunt && !manulBrowser.running",
+          "group": "navigation@2"
+        },
+        {
+          "command": "manulBrowser.debugNext",
+          "when": "resourceLangId == hunt && manulBrowser.paused",
+          "group": "navigation@1"
+        },
+        {
+          "command": "manulBrowser.debugContinue",
+          "when": "resourceLangId == hunt && manulBrowser.paused",
+          "group": "navigation@2"
+        },
+        {
+          "command": "manulBrowser.debugExplain",
+          "when": "resourceLangId == hunt && manulBrowser.paused",
+          "group": "navigation@3"
+        },
+        {
+          "command": "manulBrowser.debugHighlight",
+          "when": "resourceLangId == hunt && manulBrowser.paused",
+          "group": "navigation@4"
+        },
+        {
+          "command": "manulBrowser.stop",
+          "when": "resourceLangId == hunt && manulBrowser.running",
+          "group": "navigation@5"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "manulBrowser.runFile",
+          "when": "resourceLangId == hunt",
+          "group": "manul@1"
+        },
+        {
+          "command": "manulBrowser.debugFile",
+          "when": "resourceLangId == hunt",
+          "group": "manul@2"
+        },
+        {
+          "command": "manulBrowser.insertStep",
+          "when": "resourceLangId == hunt",
+          "group": "manul@3"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "manulBrowser.runFile",
+          "when": "resourceExtname == .hunt",
+          "group": "manul@1"
+        },
+        {
+          "command": "manulBrowser.debugFile",
+          "when": "resourceExtname == .hunt",
+          "group": "manul@2"
+        },
+        {
+          "command": "manulBrowser.runInTerminal",
+          "when": "resourceExtname == .hunt || explorerResourceIsFolder",
+          "group": "manul@3"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "manulBrowser.createHooks",
+          "when": "view == manulBrowser.hooks",
+          "group": "navigation@1"
+        },
+        {
+          "command": "manulBrowser.toggleHooks",
+          "when": "view == manulBrowser.hooks",
+          "group": "navigation@2"
+        },
+        {
+          "command": "manulBrowser.refreshHooks",
+          "when": "view == manulBrowser.hooks",
+          "group": "navigation@3"
+        },
+        {
+          "command": "manulBrowser.doctor",
+          "when": "view == manulBrowser.dashboard",
+          "group": "navigation@1"
+        },
+        {
+          "command": "manulBrowser.showOutput",
+          "when": "view == manulBrowser.dashboard",
+          "group": "navigation@2"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "manulBrowser.debugNext",
+          "when": "manulBrowser.paused"
+        },
+        {
+          "command": "manulBrowser.debugContinue",
+          "when": "manulBrowser.paused"
+        },
+        {
+          "command": "manulBrowser.debugExplain",
+          "when": "manulBrowser.paused"
+        },
+        {
+          "command": "manulBrowser.debugHighlight",
+          "when": "manulBrowser.paused"
+        },
+        {
+          "command": "manulBrowser.stop",
+          "when": "manulBrowser.running"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "manulBrowser.debugNext",
+        "key": "f10",
+        "when": "manulBrowser.paused && !inDebugMode"
+      },
+      {
+        "command": "manulBrowser.debugContinue",
+        "key": "f5",
+        "when": "manulBrowser.paused && !inDebugMode"
+      },
+      {
+        "command": "manulBrowser.stop",
+        "key": "shift+f5",
+        "when": "manulBrowser.running && !inDebugMode"
+      },
+      {
+        "command": "manulBrowser.runFile",
+        "key": "ctrl+alt+r",
+        "mac": "cmd+alt+r",
+        "when": "editorLangId == hunt && !manulBrowser.running"
+      }
+    ],
+    "configuration": {
+      "title": "Manul Browser",
+      "properties": {
+        "manulBrowser.enginePath": {
+          "type": "string",
+          "default": "",
+          "scope": "resource",
+          "markdownDescription": "Path to the `manul` engine binary. Leave empty to find it: the workspace's `node_modules`, its Python environment (`.venv`, `venv`, `env`), a binary in the workspace, the Go bin directory, then `PATH`."
+        },
+        "manulBrowser.pythonPath": {
+          "type": "string",
+          "default": "",
+          "scope": "resource",
+          "markdownDescription": "Python interpreter, or virtual environment folder, used to find the engine and to run `.py` hook scripts. Leave empty to use the environment the engine was found in."
+        },
+        "manulBrowser.nodePath": {
+          "type": "string",
+          "default": "",
+          "scope": "resource",
+          "markdownDescription": "Node executable used to run `.js` / `.mjs` hook scripts. Leave empty to use `node` from `PATH`."
+        },
+        "manulBrowser.hooks.enabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "markdownDescription": "Pass a hook script to every run. The script supplies custom controls, `CALL` handlers and suite hooks (`before_all`, `after_all`, `before_group`, `after_group`)."
+        },
+        "manulBrowser.hooks.path": {
+          "type": "string",
+          "default": "",
+          "scope": "resource",
+          "markdownDescription": "Hook script to use, relative to the workspace folder. Leave empty to pick up the nearest `manul_hooks.py`, `manul_hooks.mjs`, `manul_hooks.js` or `manul_hooks.cjs` at or above the hunt file."
+        },
+        "manulBrowser.run.browser": {
+          "type": "string",
+          "enum": [
+            "config",
+            "chromium",
+            "firefox"
+          ],
+          "enumDescriptions": [
+            "Whatever manul.config.json says (Chromium when it says nothing)",
+            "Chromium, driven over CDP",
+            "Firefox, driven over WebDriver BiDi"
+          ],
+          "default": "config",
+          "scope": "resource",
+          "description": "Browser to launch."
+        },
+        "manulBrowser.run.channel": {
+          "type": "string",
+          "default": "",
+          "scope": "resource",
+          "markdownDescription": "Browser channel, for example `chrome`, `msedge`, `firefox-dev`. Leave empty for the engine's default."
+        },
+        "manulBrowser.run.headless": {
+          "type": "string",
+          "enum": [
+            "config",
+            "on",
+            "off"
+          ],
+          "enumDescriptions": [
+            "Whatever manul.config.json says",
+            "No browser window",
+            "Show the browser window"
+          ],
+          "default": "config",
+          "scope": "resource",
+          "description": "Whether the browser runs without a window. Debug runs always show it."
+        },
+        "manulBrowser.run.retries": {
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 10,
+          "scope": "resource",
+          "description": "Run a failed hunt again up to this many times. One that then passes is reported as flaky. 0 leaves it to manul.config.json."
+        },
+        "manulBrowser.run.screenshot": {
+          "type": "string",
+          "enum": [
+            "config",
+            "on-fail",
+            "always",
+            "none"
+          ],
+          "default": "config",
+          "scope": "resource",
+          "description": "When the engine saves a screenshot of the page."
+        },
+        "manulBrowser.run.htmlReport": {
+          "type": "boolean",
+          "default": false,
+          "scope": "resource",
+          "description": "Write reports/manul_report.html after each run."
+        },
+        "manulBrowser.run.explain": {
+          "type": "boolean",
+          "default": false,
+          "scope": "resource",
+          "description": "Have the engine print the score breakdown for every element it resolves."
+        },
+        "manulBrowser.run.workers": {
+          "type": "integer",
+          "default": 1,
+          "minimum": 1,
+          "maximum": 16,
+          "scope": "resource",
+          "description": "How many hunt files the Test Explorer runs at once. Each gets its own engine and its own browser."
+        },
+        "manulBrowser.run.extraArgs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "scope": "resource",
+          "markdownDescription": "Extra arguments passed to the engine on every run, for example `[\"--timeout\", \"10s\"]`."
+        },
+        "manulBrowser.run.env": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {},
+          "scope": "resource",
+          "description": "Environment variables added to every run."
+        },
+        "manulBrowser.testsHome": {
+          "type": "string",
+          "default": "",
+          "scope": "resource",
+          "markdownDescription": "Folder new hunt files are created in, relative to the workspace folder. Leave empty to use `tests_home` from `manul.config.json`, or `tests`."
+        },
+        "manulBrowser.inlineResults": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show each step's outcome and duration at the end of its line after a run."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "test": "npm run compile && node --test \"out/test/*.test.js\"",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^3.7.1",
+    "typescript": "^5.7.0"
+  }
+}

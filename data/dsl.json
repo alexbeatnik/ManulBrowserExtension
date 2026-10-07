@@ -1,0 +1,478 @@
+{
+ "version": "0.1.2",
+ "commands": [
+  {
+   "id": "navigate",
+   "label": "NAVIGATE",
+   "uiText": "NAVIGATE to ''",
+   "snippet": "NAVIGATE to ${1:url}",
+   "description": "Navigates the browser to a specific URL and waits for DOM settlement.",
+   "category": "navigation"
+  },
+  {
+   "id": "open_app",
+   "label": "OPEN APP",
+   "uiText": "OPEN APP",
+   "snippet": "OPEN APP",
+   "description": "Attaches to an Electron/Desktop app window instead of navigating to a URL. Use as the first step for executable_path targets.",
+   "category": "navigation"
+  },
+  {
+   "id": "click",
+   "label": "CLICK",
+   "uiText": "CLICK the ''",
+   "snippet": "CLICK the '${1:target}'${2: button}",
+   "description": "Clicks a resolved element. Detected by the 'click' verb (case-insensitive). Element type hint (button, link, element) after the target is optional but recommended for scoring accuracy. Interaction mode: clickable.",
+   "category": "interaction"
+  },
+  {
+   "id": "double_click",
+   "label": "DOUBLE CLICK",
+   "uiText": "DOUBLE CLICK the ''",
+   "snippet": "DOUBLE CLICK the '${1:target}'",
+   "description": "Double-clicks a resolved element. Detected by the 'double' + 'click' verbs (case-insensitive). Interaction mode: clickable.",
+   "category": "interaction"
+  },
+  {
+   "id": "check",
+   "label": "CHECK",
+   "uiText": "CHECK the checkbox for ''",
+   "snippet": "CHECK the checkbox for '${1:target}'",
+   "description": "Checks a checkbox element. Detected by the 'check' verb (case-insensitive). Interaction mode: clickable.",
+   "category": "interaction"
+  },
+  {
+   "id": "uncheck",
+   "label": "UNCHECK",
+   "uiText": "UNCHECK the checkbox for ''",
+   "snippet": "UNCHECK the checkbox for '${1:target}'",
+   "description": "Unchecks a checkbox element. Detected by the 'uncheck' verb (case-insensitive). Interaction mode: clickable.",
+   "category": "interaction"
+  },
+  {
+   "id": "fill",
+   "label": "FILL",
+   "uiText": "FILL '' field with ''",
+   "snippet": "FILL '${1:target}' field with '${2:value}'",
+   "description": "Types text into a resolved input/textarea element. Detected by the 'fill' verb (case-insensitive). Element type hint (field, input) is optional but recommended. Interaction mode: input.",
+   "category": "interaction"
+  },
+  {
+   "id": "type",
+   "label": "TYPE",
+   "uiText": "TYPE '' into ''",
+   "snippet": "TYPE '${1:value}' into '${2:target}'",
+   "description": "Types text into a resolved element. Detected by the 'type' verb (case-insensitive). Interaction mode: input.",
+   "category": "interaction"
+  },
+  {
+   "id": "select",
+   "label": "SELECT",
+   "uiText": "SELECT '' from the '' dropdown",
+   "snippet": "SELECT '${1:option}' from the '${2:target}' dropdown",
+   "description": "Selects an option from a native <select> or custom dropdown. Detected by the 'select' or 'choose' verbs (case-insensitive). Element type hint (dropdown) is optional but recommended. On a native <select> the option is matched against both its label and its value, whitespace-normalised and case-insensitively; the option is set through the native value setter and followed by input and change events. An option that matches nothing fails the step with failure_reason not_found, and the error lists the options the page does have. A custom dropdown follows the same rule: after it is opened, an option no element in the list matches fails the step rather than clicking whatever ranked first. Interaction mode: select.",
+   "category": "interaction"
+  },
+  {
+   "id": "hover",
+   "label": "HOVER",
+   "uiText": "HOVER over the ''",
+   "snippet": "HOVER over the '${1:target}'",
+   "description": "Hovers over a resolved element. Detected by the 'hover' verb (case-insensitive). Interaction mode: hover.",
+   "category": "interaction"
+  },
+  {
+   "id": "drag",
+   "label": "DRAG",
+   "uiText": "DRAG '' and drop it into ''",
+   "snippet": "DRAG '${1:source}' and drop it into '${2:destination}'",
+   "description": "Drags one element and drops it onto another. Detected by the 'drag' + 'drop' verbs (case-insensitive). A source or destination that nothing on the page matches fails the step with failure_reason not_found. Interaction mode: drag.",
+   "category": "interaction"
+  },
+  {
+   "id": "scroll",
+   "label": "SCROLL DOWN",
+   "uiText": "SCROLL DOWN",
+   "snippet": "SCROLL DOWN${1: inside the ${2:container}}",
+   "description": "Scrolls the main page down by one viewport height, or scrolls a container to the bottom when 'inside the <container>' is appended.",
+   "category": "navigation"
+  },
+  {
+   "id": "wait",
+   "label": "WAIT",
+   "uiText": "WAIT 2",
+   "snippet": "WAIT ${1:seconds}",
+   "description": "Hard sleep for N seconds. Only matched when other WAIT variants (WAIT FOR RESPONSE, WAIT FOR element) do not match first.",
+   "category": "wait"
+  },
+  {
+   "id": "wait_for_element",
+   "label": "WAIT FOR element",
+   "uiText": "WAIT FOR '' to be visible",
+   "snippet": "WAIT FOR '${1:target}' to ${2|be visible,be hidden,disappear|}",
+   "description": "Explicit wait for a quoted element to reach a desired state. States: visible (the default), hidden / disappear, enabled, disabled. Polls every 250ms for up to 15s, invalidating the snapshot cache each time so the wait can see the change it is waiting for. Presence is judged at ThresholdAmbiguous — the same bar the rest of the engine uses to call a target resolved — because the scorer always ranks something and 'a top candidate exists' is not 'the target is present'.",
+   "category": "wait"
+  },
+  {
+   "id": "wait_for_selector",
+   "label": "WAIT FOR SELECTOR",
+   "uiText": "WAIT FOR SELECTOR ''",
+   "snippet": "WAIT FOR SELECTOR '${1:css-selector}'",
+   "description": "Explicit wait for a CSS selector to appear in the DOM. Bypasses the scorer entirely — the caller gave an exact selector, so it is honoured literally. Prefer it over WAIT FOR when targeting by tag or class rather than visible text (e.g. 'ytd-video-renderer'). Parsed ahead of the other WAIT FOR forms, which would otherwise swallow it.",
+   "category": "wait"
+  },
+  {
+   "id": "wait_for_response",
+   "label": "WAIT FOR RESPONSE",
+   "uiText": "WAIT FOR RESPONSE \"\"",
+   "snippet": "WAIT FOR RESPONSE \"${1:url_pattern}\"",
+   "description": "Blocks until a network response whose URL ends with the pattern arrives (suffix match, on both the CDP and the BiDi backend).",
+   "category": "wait"
+  },
+  {
+   "id": "extract",
+   "label": "EXTRACT",
+   "uiText": "EXTRACT the '' into {variable}",
+   "snippet": "EXTRACT the '${1:target}' into {${2:variable}}",
+   "description": "Extracts the text content of a resolved element and stores it into a runtime variable for use in subsequent steps.",
+   "category": "data"
+  },
+  {
+   "id": "verify",
+   "label": "VERIFY",
+   "uiText": "VERIFY that '' is present",
+   "snippet": "VERIFY that '${1:target}' is ${2|present,NOT present,ENABLED,DISABLED,checked,NOT checked|}",
+   "description": "Asserts that an element or text is present, not present, enabled, disabled, checked, or not checked. Fails the mission on mismatch. State is read off the element whether or not it is disabled — 'is disabled' finds the disabled control, and a read-only checkbox still reports 'is checked'. A text check that could not read the page at all fails rather than concluding the text is absent.",
+   "category": "assertion"
+  },
+  {
+   "id": "verify_text_strict",
+   "label": "VERIFY strict text",
+   "uiText": "VERIFY '' element has text ''",
+   "snippet": "VERIFY '${1:element_name}' ${2|button,field,element,input|} has text '${3:Expected Text}'",
+   "description": "Strict text verification. Resolves the element via heuristics, reads locator.inner_text().strip(), and asserts exact equality against the expected text.",
+   "category": "assertion"
+  },
+  {
+   "id": "verify_placeholder_strict",
+   "label": "VERIFY strict placeholder",
+   "uiText": "VERIFY '' field has placeholder ''",
+   "snippet": "VERIFY '${1:element_name}' ${2|button,field,element,input|} has placeholder '${3:Expected Placeholder}'",
+   "description": "Strict placeholder verification. Resolves the element via heuristics, reads its placeholder attribute, and asserts exact equality against the expected placeholder.",
+   "category": "assertion"
+  },
+  {
+   "id": "verify_value_strict",
+   "label": "VERIFY strict value",
+   "uiText": "VERIFY '' field has value ''",
+   "snippet": "VERIFY '${1:element_name}' ${2|button,field,element,input|} has value '${3:Expected Value}'",
+   "description": "Strict value verification. Resolves the element via heuristics, reads its current value via locator.input_value() with a value-attribute fallback, normalizes missing values to an empty string, and asserts exact equality against the expected value.",
+   "category": "assertion"
+  },
+  {
+   "id": "verify_softly",
+   "label": "VERIFY SOFTLY",
+   "uiText": "VERIFY SOFTLY that '' is present",
+   "snippet": "VERIFY SOFTLY that '${1:target}' is ${2|present,NOT present,ENABLED,DISABLED,checked,NOT checked|}",
+   "description": "Non-fatal assertion. Same as VERIFY but does not stop execution on failure. Failures are collected as soft errors with 'warning' status. One look at the page, no retry loop: the text form checks the page text, the state form (enabled, disabled, checked, visible, …) reads that state off the resolved element.",
+   "category": "assertion"
+  },
+  {
+   "id": "verify_visual",
+   "label": "VERIFY VISUAL",
+   "uiText": "VERIFY VISUAL ''",
+   "snippet": "VERIFY VISUAL '${1:element}'",
+   "description": "Compares how the named element looks against a saved baseline image. The element is resolved like any other target (a name nothing on the page matches fails with not_found), scrolled into view, and cropped out of a viewport screenshot. The baseline is visual_baselines/<element-name>_<hash of the step text>.png beside the .hunt file (the working directory when the hunt has no file); the first run saves it and passes. Later runs fail when the size differs or when more than 1% of pixels differ. Baselines are browser-specific: Chromium and Firefox do not render alike.",
+   "category": "assertion"
+  },
+  {
+   "id": "press_enter",
+   "label": "PRESS ENTER",
+   "uiText": "PRESS ENTER",
+   "snippet": "PRESS ENTER",
+   "description": "Presses the Enter key on the currently focused element. Useful for submitting forms after filling a field.",
+   "category": "keyboard"
+  },
+  {
+   "id": "press",
+   "label": "PRESS",
+   "uiText": "PRESS Escape",
+   "snippet": "PRESS ${1:Key}${2: on '${3:target}'}",
+   "description": "Presses any key or key combination globally (e.g. PRESS Escape, PRESS Control+A), or on a specific resolved element when 'on <target>' is appended. A chord holds its modifiers (Control/Ctrl, Alt/Option, Meta/Cmd, Shift) around the last key. With 'on <target>' the target is focused first — a field if one matches, otherwise anything clickable — and a target nothing matches fails the step instead of pressing the key wherever focus happens to be.",
+   "category": "keyboard"
+  },
+  {
+   "id": "right_click",
+   "label": "RIGHT CLICK",
+   "uiText": "RIGHT CLICK ''",
+   "snippet": "RIGHT CLICK '${1:target}'",
+   "description": "Right-clicks a resolved element to open a context menu.",
+   "category": "interaction"
+  },
+  {
+   "id": "upload",
+   "label": "UPLOAD",
+   "uiText": "UPLOAD '' to ''",
+   "snippet": "UPLOAD '${1:file_path}' to '${2:target}'",
+   "description": "Uploads a file to a file-input element. Both file path and target must be quoted. Path resolved relative to the .hunt file directory, then CWD.",
+   "category": "interaction"
+  },
+  {
+   "id": "mock",
+   "label": "MOCK",
+   "uiText": "MOCK GET \"\" with ''",
+   "snippet": "MOCK ${1|GET,POST,PUT,PATCH,DELETE|} \"${2:url_pattern}\" with '${3:mock_file}'",
+   "description": "Intercepts matching network requests via CDP request interception and fulfills from a local mock file. Supported HTTP methods: GET, POST, PUT, PATCH, DELETE.",
+   "category": "network"
+  },
+  {
+   "id": "call_host",
+   "label": "CALL HOST",
+   "uiText": "CALL HOST package.function",
+   "snippet": "CALL HOST ${1:package}.${2:function}${3: with args: \"${4:arg}\"}${5: into {${6:variable}}}",
+   "description": "Invokes a handler registered by the host inline. In Go the handler is registered via the embedding API (RegisterGoCall); through a language binding it is a function in the client process, reached by a reverse call over the session protocol. Supports positional arguments ('with args:' sugar), optional 'into {var}' / 'to {var}' capture, and @script alias rewriting for CALL HOST {alias}.func syntax. CALL GO and CALL PYTHON are accepted spellings of the same command and parse identically.",
+   "category": "host"
+  },
+  {
+   "id": "set_var",
+   "label": "SET",
+   "uiText": "SET {variable} = value",
+   "snippet": "SET {${1:variable}} = ${2:value}",
+   "description": "Sets a runtime variable mid-flight. Both {braced} and bare key forms accepted. Quoted values are auto-unquoted. Available for {placeholder} substitution in all subsequent steps.",
+   "category": "data"
+  },
+  {
+   "id": "print",
+   "label": "PRINT",
+   "uiText": "PRINT \"message {variable}\"",
+   "snippet": "PRINT \"${1:message}\"",
+   "description": "Logs a message to the run output, with {placeholder} variables substituted and a single layer of surrounding quotes stripped. No element resolution. (CmdPrint).",
+   "category": "utility"
+  },
+  {
+   "id": "screenshot",
+   "label": "SCREENSHOT",
+   "uiText": "SCREENSHOT [\"name\"]",
+   "snippet": "SCREENSHOT \"${1:name}\"",
+   "description": "Captures a full-page PNG on demand into screenshots/<name>.png under the CWD (auto-named when no label is given).",
+   "category": "utility"
+  },
+  {
+   "id": "highlight",
+   "label": "HIGHLIGHT",
+   "uiText": "HIGHLIGHT the ''",
+   "snippet": "HIGHLIGHT the '${1:target}'",
+   "description": "Flashes a border around a resolved element for two seconds. Purely diagnostic — it changes nothing on the page. A target that does not resolve is an error rather than a silent no-op, since a highlight nobody can see is not worth passing.",
+   "category": "utility"
+  },
+  {
+   "id": "full_scan",
+   "label": "FULL SCAN",
+   "uiText": "FULL SCAN",
+   "snippet": "FULL SCAN",
+   "description": "Scans the current page and prints every interactive control as Markdown tables grouped by landmark ancestor, one '## group' heading per landmark with a role/label/tag/editable/locator table. Console only, no file output. Groups are emitted in sorted order so two scans of the same page diff cleanly. Markdown rather than JSON because the audience is a person reading a terminal or a model reading a prompt.",
+   "category": "utility"
+  },
+  {
+   "id": "scan_page",
+   "label": "SCAN PAGE",
+   "uiText": "SCAN PAGE",
+   "snippet": "SCAN PAGE${1: into {${2:filename}}}",
+   "description": "Scans the current page and prints a draft .hunt to the console, optionally writing it to a file with 'into {filename}' or 'to {filename}'. Complements the `scan` CLI subcommand, which needs a URL: these verbs work on a page you can only reach by driving there — behind a login, or three steps into a flow.",
+   "category": "utility"
+  },
+  {
+   "id": "debug",
+   "label": "DEBUG",
+   "uiText": "DEBUG",
+   "snippet": "DEBUG",
+   "description": "Pauses execution at this step. In interactive terminal mode (--debug), prompts the user; in pipe mode (--break-lines), emits the debug pause protocol marker. PAUSE is accepted as an alias.",
+   "category": "utility"
+  },
+  {
+   "id": "debug_vars",
+   "label": "DEBUG VARS",
+   "uiText": "DEBUG VARS",
+   "snippet": "DEBUG VARS",
+   "description": "Prints the current state of all runtime variables to the console for diagnostic purposes.",
+   "category": "utility"
+  },
+  {
+   "id": "done",
+   "label": "DONE",
+   "uiText": "DONE.",
+   "snippet": "DONE.",
+   "description": "Explicitly ends the mission. Any steps after DONE are not executed.",
+   "category": "control_flow"
+  },
+  {
+   "id": "logical_step",
+   "label": "STEP",
+   "uiText": "STEP 1: Description",
+   "snippet": "STEP ${1:N}: ${2:Description}",
+   "description": "Declares a hierarchical STEP block. All action lines following this header belong to this block until the next STEP header. The number is optional. Used for HTML report accordions and console grouping.",
+   "category": "structure"
+  },
+  {
+   "id": "use_import",
+   "label": "USE",
+   "uiText": "USE Login",
+   "snippet": "USE ${1:BlockName}",
+   "description": "Expands an imported STEP block inline at parse time. The block must have been imported via @import:. Aliased names (from 'as' clause) are supported. Case-insensitive matching.",
+   "category": "structure"
+  },
+  {
+   "id": "if_block",
+   "label": "IF",
+   "uiText": "IF button 'Save' exists:",
+   "snippet": "IF ${1:condition}:\n        ${2:action}",
+   "description": "Block-style conditional branching. Body lines are indented by 4 extra spaces. Supports ELIF and ELSE branches, in the mission body and inside [SETUP] / [TEARDOWN] alike. Nesting supported. Conditions: element exists, text present, variable comparison/contains/truthy; their keywords are case-insensitive ('is NOT present').",
+   "category": "control_flow"
+  },
+  {
+   "id": "elif_block",
+   "label": "ELIF",
+   "uiText": "ELIF text 'Error' is present:",
+   "snippet": "ELIF ${1:condition}:\n        ${2:action}",
+   "description": "Alternative branch in an IF block. Multiple ELIF branches are allowed. Must follow IF or another ELIF. Cannot appear after ELSE.",
+   "category": "control_flow"
+  },
+  {
+   "id": "else_block",
+   "label": "ELSE",
+   "uiText": "ELSE:",
+   "snippet": "ELSE:\n        ${1:action}",
+   "description": "Default branch in an IF block. Only one ELSE is allowed and must be the last branch.",
+   "category": "control_flow"
+  },
+  {
+   "id": "repeat_loop",
+   "label": "REPEAT",
+   "uiText": "REPEAT 3 TIMES:",
+   "snippet": "REPEAT ${1:N} TIMES:\n        ${2:action}",
+   "description": "Fixed-count loop. Body lines are indented by 4 extra spaces. The counter variable is {i} unless the header names another with 'REPEAT N TIMES as {name}:', and counts from 0. Nesting supported.",
+   "category": "control_flow"
+  },
+  {
+   "id": "for_each_loop",
+   "label": "FOR EACH",
+   "uiText": "FOR EACH {item} IN {items}:",
+   "snippet": "FOR EACH {${1:var}} IN {${2:collection}}:\n        ${3:action}",
+   "description": "Iterate over comma-separated values from a variable. On each iteration the loop variable is set to the next value. Nesting supported.",
+   "category": "control_flow"
+  },
+  {
+   "id": "while_loop",
+   "label": "WHILE",
+   "uiText": "WHILE button 'Next' exists:",
+   "snippet": "WHILE ${1:condition}:\n        ${2:action}",
+   "description": "Repeat while condition is true. Uses same conditions as IF blocks. Safety limit: 100 iterations. Nesting supported.",
+   "category": "control_flow"
+  }
+ ],
+ "metadata": [
+  {
+   "id": "context",
+   "label": "@context:",
+   "uiText": "@context: description",
+   "snippet": "@context: ${1:description}",
+   "description": "Strategic context for the mission (documentation / agent hint). Placed at the top of the file."
+  },
+  {
+   "id": "title",
+   "label": "@title:",
+   "uiText": "@title: Suite Name",
+   "snippet": "@title: ${1:Suite Name}",
+   "description": "Short display name for the test suite. @blueprint: is accepted as a backward-compatible alias."
+  },
+  {
+   "id": "tags",
+   "label": "@tags:",
+   "uiText": "@tags: smoke, regression",
+   "snippet": "@tags: ${1:tag1, tag2}",
+   "description": "Comma-separated run tags for CLI --tags filtering. Files are selected when at least one tag matches."
+  },
+  {
+   "id": "var",
+   "label": "@var:",
+   "uiText": "@var: {key} = value",
+   "snippet": "@var: {${1:key}} = ${2:value}",
+   "description": "Declares a static variable pre-populated into runtime memory before any step runs. Available as {key} placeholder in all steps."
+  },
+  {
+   "id": "script",
+   "label": "@script:",
+   "uiText": "@script: {alias} = scripts.helpers",
+   "snippet": "@script: {${1:alias}} = ${2:scripts.helpers}",
+   "description": "Declares a file-local Go function alias for later CALL GO usage. Supported forms: module alias (`@script: {auth} = scripts.auth_helpers` -> `CALL GO {auth}.issue_token`) and callable alias (`@script: {issue_token} = scripts.auth_helpers.issue_token` -> `CALL GO {issue_token}`). Alias names must match placeholder identifiers (`^[A-Za-z_]\\w*$`). Targets must be registered Go function references (package.function)."
+  },
+  {
+   "id": "data",
+   "label": "@data:",
+   "uiText": "@data: data/file.json",
+   "snippet": "@data: ${1:path/to/file.json}",
+   "description": "Points to a JSON (array-of-objects) or CSV file for data-driven testing. The engine reruns the entire mission for each row, injecting values as {placeholders}."
+  },
+  {
+   "id": "schedule",
+   "label": "@schedule:",
+   "uiText": "@schedule: daily at 09:00",
+   "snippet": "@schedule: ${1|every 30 seconds,every 1 minute,every 5 minutes,every 15 minutes,every 1 hour,daily at 09:00,every monday|}",
+   "description": "Declares a schedule for daemon mode (manul daemon). Supported: every N seconds/minutes/hours, every minute/hour, daily at HH:MM, every <weekday>, every <weekday> at HH:MM."
+  },
+  {
+   "id": "import",
+   "label": "@import:",
+   "uiText": "@import: Login, Logout from lib/auth.hunt",
+   "snippet": "@import: ${1:BlockName} from ${2:source.hunt}",
+   "description": "Imports named STEP blocks from another .hunt file. Supports named imports (@import: Login, Logout from lib.hunt), wildcard (@import: * from lib.hunt), aliases (@import: Login as AuthLogin from lib.hunt), and package-style sources (@import: Login from @my-lib). Imported blocks are available for USE directives. @var: declarations from the source file are inherited at LEVEL_IMPORT (lowest priority)."
+  },
+  {
+   "id": "export",
+   "label": "@export:",
+   "uiText": "@export: Login, Logout",
+   "snippet": "@export: ${1:BlockName}",
+   "description": "Declares which STEP blocks are importable by other .hunt files. Multiple @export: lines are allowed. @export: * makes all blocks available. When no @export: is declared and a wildcard @import: * is used, all blocks are available (open by default)."
+  }
+ ],
+ "hookBlocks": [
+  {
+   "id": "setup",
+   "label": "[SETUP]",
+   "openTag": "[SETUP]",
+   "closeTag": "[END SETUP]",
+   "snippet": "[SETUP]\n    PRINT \"${1:Preparing setup}\"\n    CALL GO ${2:module}.${3:function}${4: with args: \"${5:arg}\"}${6: into {${7:variable}}}\n[END SETUP]",
+   "description": "Block of PRINT and CALL GO lines executed BEFORE the browser launches. If any line fails, the mission is marked as broken and browser steps are skipped. Teardown is not called when setup fails. Target functions must be synchronous."
+  },
+  {
+   "id": "teardown",
+   "label": "[TEARDOWN]",
+   "openTag": "[TEARDOWN]",
+   "closeTag": "[END TEARDOWN]",
+   "snippet": "[TEARDOWN]\n    PRINT \"${1:Cleaning up}\"\n    CALL GO ${2:module}.${3:function}${4: with args: \"${5:arg}\"}\n[END TEARDOWN]",
+   "description": "Cleanup block executed after the mission body in a finally block. It runs only when [SETUP] succeeded. Failure is logged but does not override the mission result."
+  }
+ ],
+ "qualifiers": [
+  {
+   "id": "near",
+   "syntax": "<action> NEAR '<anchor>'",
+   "description": "Biases candidate ranking by Euclidean distance to a resolved anchor element. Used for repeated buttons, links, and fields located close to a known label or neighboring control."
+  },
+  {
+   "id": "on_header",
+   "syntax": "<action> ON HEADER",
+   "description": "Prefers candidates inside header or nav ancestry, or within the top 15% of the viewport."
+  },
+  {
+   "id": "on_footer",
+   "syntax": "<action> ON FOOTER",
+   "description": "Prefers candidates inside footer ancestry, or within the bottom 15% of the viewport."
+  },
+  {
+   "id": "inside_row",
+   "syntax": "<action> INSIDE '<container>' row with '<text>'",
+   "description": "Resolves the row text first, climbs to a container boundary such as tr, li, or div[role=row], and restricts candidate scoring to that subtree before normal action scoring continues."
+  }
+ ]
+}
