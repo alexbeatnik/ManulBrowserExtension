@@ -9,6 +9,9 @@
       "include": "#comment"
     },
     {
+      "include": "#inline-comment"
+    },
+    {
       "include": "#metadata"
     },
     {
@@ -191,7 +194,7 @@
     },
     "system-keyword": {
       "name": "storage.type.hunt",
-      "match": "(?i)\\b(NAVIGATE to|NAVIGATE|OPEN\\s+APP|EXTRACT|SCROLL DOWN|SCROLL|PRESS ENTER|PRESS|RIGHT CLICK|UPLOAD|MOCK\\s+(?:GET|POST|PUT|PATCH|DELETE)|WAIT FOR RESPONSE|WAIT FOR SELECTOR|WAIT FOR|WAIT|DOUBLE CLICK|CLICK|HOVER|CALL HOST|CALL PYTHON|CALL GO|CALL JS|CALL NODE|USE|HIGHLIGHT|FULL SCAN|SCAN PAGE|SET|PRINT|SCREENSHOT|DEBUG VARS|DEBUG|PAUSE)\\b"
+      "match": "(?i)\\b(NAVIGATE to|NAVIGATE|OPEN\\s+APP|EXTRACT|SCROLL DOWN|SCROLL|SWITCH\\s+(?:TO\\s+)?TAB|PRESS ENTER|PRESS|RIGHT[ -]CLICK|UPLOAD|MOCK\\s+(?:GET|POST|PUT|PATCH|DELETE)|WAIT FOR RESPONSE|WAIT FOR SELECTOR|WAIT FOR|WAIT|DOUBLE[ -]CLICK|CLICK|HOVER|CALL HOST|CALL PYTHON|CALL GO|CALL JS|CALL NODE|USE|HIGHLIGHT|FULL SCAN|SCAN PAGE|SET|PRINT|SCREENSHOT|DEBUG VARS|DEBUG|PAUSE)\\b"
     },
     "action-verb": {
       "name": "entity.name.function.action.hunt",
@@ -228,6 +231,10 @@
     "modifier": {
       "name": "keyword.other.modifier.hunt",
       "match": "(?i)\\b(if exists|optional|NOT|DISABLED|ENABLED|SOFTLY|VISUAL|ON HEADER|ON FOOTER|is present|is checked|is NOT checked|is NOT present|be visible|be hidden|disappear|into|from|to|that|the|with|near|inside|on|header|footer|row|field|button|link|checkbox|dropdown|input|has|text|placeholder|value|args|exists|contains|in)\\b"
+    },
+    "inline-comment": {
+      "name": "comment.line.number-sign.inline.hunt",
+      "match": "(?<![Pp][Rr][Ee][Ss][Ss] )(?<=[ \\t])#(?=[ \\t]).*$"
     }
   }
 }

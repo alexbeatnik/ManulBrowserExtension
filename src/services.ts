@@ -22,6 +22,7 @@ export interface Settings {
   hooksPath: string;
   browser: string;
   channel: string;
+  locale: string;
   headless: boolean | undefined;
   retries: number;
   screenshot: string;
@@ -80,6 +81,7 @@ export class Services implements vscode.Disposable {
       hooksPath: c.get('hooks.path', ''),
       browser: orConfig(c.get('run.browser', 'config')),
       channel: c.get('run.channel', ''),
+      locale: c.get('run.locale', '').trim(),
       headless: headless === 'on' ? true : headless === 'off' ? false : undefined,
       retries: c.get('run.retries', 0),
       screenshot: orConfig(c.get('run.screenshot', 'config')),

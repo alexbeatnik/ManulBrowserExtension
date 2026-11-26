@@ -1,0 +1,190 @@
+{
+  "agent_commands": {
+    "map": "compact landmark-grouped page map → page_map JSON",
+    "read": "read one labelled value (zero-scan) → {value, found, reason}",
+    "read --selector": "read sanitized region text → {text, selector}",
+    "run-step --compact": "run one instruction → StepOutcome JSON",
+    "schema": "this contract"
+  },
+  "engine": "manul",
+  "failure_reasons": [
+    "ok",
+    "not_found",
+    "ambiguous",
+    "timeout",
+    "verify_failed",
+    "action_failed"
+  ],
+  "hunt_rules": [
+    "STEP headers are numbered; action lines are not.",
+    "4-space indent under each STEP.",
+    "Never hardcode data: @var: {key} = value, reference as {key}.",
+    "Follow FILL/TYPE with VERIFY ... has value \"...\"."
+  ],
+  "page_map": {
+    "element": "{label, role, editable?}",
+    "groups": "array of {name, elements[], truncated}",
+    "ordering": "Page first, then content landmarks, then chrome (header/nav/footer).",
+    "url": "string — current page URL"
+  },
+  "step_outcome": {
+    "action": "string — lowercase verb (click, fill, navigate…)",
+    "error": "string — raw error message (omitted on success)",
+    "near": "array of {text, score} — top candidates on failure or low-confidence match",
+    "ok": "bool — step succeeded",
+    "reason": "string — one of the failure_reasons enum; 'ok' on success",
+    "score": "number — winning candidate score [0..1]",
+    "url": "string — page URL after the step (omitted when unchanged)",
+    "value": "string — value used/extracted (omitted when empty)"
+  },
+  "targeting": "Elements are resolved by their human-visible label via a deterministic scorer — never CSS/XPath. Always quote labels: Click the 'Login' button.",
+  "verbs": [
+    {
+      "verb": "NAVIGATE",
+      "syntax": "NAVIGATE to \u003curl\u003e",
+      "note": "load a page"
+    },
+    {
+      "verb": "CLICK",
+      "syntax": "Click the '\u003clabel\u003e' button|link",
+      "note": "click an element by label"
+    },
+    {
+      "verb": "DOUBLE CLICK",
+      "syntax": "Double-click the '\u003clabel\u003e'"
+    },
+    {
+      "verb": "RIGHT CLICK",
+      "syntax": "Right-click the '\u003clabel\u003e'"
+    },
+    {
+      "verb": "FILL",
+      "syntax": "Fill '\u003clabel\u003e' with '\u003cvalue\u003e'",
+      "note": "set an input; follow with VERIFY"
+    },
+    {
+      "verb": "TYPE",
+      "syntax": "Type '\u003cvalue\u003e' into '\u003clabel\u003e'",
+      "note": "keystroke-by-keystroke"
+    },
+    {
+      "verb": "SELECT",
+      "syntax": "Select '\u003coption\u003e' from the '\u003clabel\u003e' dropdown"
+    },
+    {
+      "verb": "CHECK",
+      "syntax": "Check the checkbox for '\u003clabel\u003e'"
+    },
+    {
+      "verb": "UNCHECK",
+      "syntax": "Uncheck the checkbox for '\u003clabel\u003e'"
+    },
+    {
+      "verb": "HOVER",
+      "syntax": "Hover over the '\u003clabel\u003e'"
+    },
+    {
+      "verb": "DRAG",
+      "syntax": "Drag '\u003clabel\u003e' to '\u003ctarget\u003e'"
+    },
+    {
+      "verb": "PRESS",
+      "syntax": "Press \u003ckey\u003e",
+      "note": "e.g. Press Enter"
+    },
+    {
+      "verb": "SCROLL",
+      "syntax": "Scroll down|up|to '\u003clabel\u003e'"
+    },
+    {
+      "verb": "UPLOAD",
+      "syntax": "Upload '\u003cpath\u003e' to '\u003clabel\u003e'"
+    },
+    {
+      "verb": "VERIFY",
+      "syntax": "VERIFY '\u003clabel\u003e' has value|text \"\u003cexpected\u003e\"",
+      "note": "hard assertion"
+    },
+    {
+      "verb": "VERIFY SOFTLY",
+      "syntax": "VERIFY SOFTLY that '\u003clabel\u003e' is present",
+      "note": "non-fatal assertion"
+    },
+    {
+      "verb": "VERIFY VISUAL",
+      "syntax": "VERIFY VISUAL '\u003clabel\u003e'",
+      "note": "compare the element with its saved baseline image; the first run saves it"
+    },
+    {
+      "verb": "EXTRACT",
+      "syntax": "EXTRACT '\u003clabel\u003e' into {var}",
+      "note": "read text into a variable"
+    },
+    {
+      "verb": "WAIT",
+      "syntax": "WAIT \u003cseconds\u003e"
+    },
+    {
+      "verb": "WAIT FOR",
+      "syntax": "Wait for '\u003clabel\u003e' to be visible|hidden",
+      "note": "wait until present"
+    },
+    {
+      "verb": "WAIT FOR RESPONSE",
+      "syntax": "WAIT FOR RESPONSE \u003curl-substr\u003e"
+    },
+    {
+      "verb": "SET",
+      "syntax": "SET {var} = \u003cvalue\u003e"
+    },
+    {
+      "verb": "MOCK",
+      "syntax": "MOCK \u003cMETHOD\u003e '\u003cpath\u003e' with '\u003cfile\u003e'",
+      "note": "intercept a request with a fixture"
+    },
+    {
+      "verb": "SWITCH TO TAB",
+      "syntax": "SWITCH TO TAB \u003cn\u003e|'\u003ctitle or url\u003e'",
+      "note": "tab 1 is the one the hunt began on; a tab a step opens is followed without it"
+    },
+    {
+      "verb": "PRINT",
+      "syntax": "PRINT \u003ctext|{var}\u003e"
+    },
+    {
+      "verb": "SCREENSHOT",
+      "syntax": "SCREENSHOT"
+    },
+    {
+      "verb": "REPEAT",
+      "syntax": "REPEAT N TIMES:",
+      "note": "{i} is a 0-based counter; ends at END REPEAT"
+    },
+    {
+      "verb": "FOR EACH",
+      "syntax": "FOR EACH {x} IN {list}:",
+      "note": "comma-separated list; ends at END FOR"
+    },
+    {
+      "verb": "WHILE",
+      "syntax": "WHILE \u003ccondition\u003e:",
+      "note": "capped at 100 iterations; ends at END WHILE"
+    },
+    {
+      "verb": "IF",
+      "syntax": "IF \u003ccondition\u003e:",
+      "note": "with optional ELIF/ELSE; ends at END IF"
+    },
+    {
+      "verb": "CALL GO",
+      "syntax": "CALL GO \u003cpackage.function\u003e",
+      "note": "invoke a registered Go function"
+    },
+    {
+      "verb": "USE",
+      "syntax": "USE \u003cblueprint\u003e",
+      "note": "expand a blueprint"
+    }
+  ],
+  "version": "0.1.6"
+}

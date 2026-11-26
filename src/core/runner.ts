@@ -12,6 +12,8 @@ import { EngineInfo, supports } from './engine';
 
 export const PAUSE_MARKER = '\x00MANUL_DEBUG_PAUSE\x00';
 export const EXPLAIN_MARKER = '\x00MANUL_EXPLAIN_NEXT\x00';
+/** The answer to `vars` at a pause. Engines before 0.1.6 never send it. */
+export const VARS_MARKER = '\x00MANUL_DEBUG_VARS\x00';
 
 export interface CandidateResult {
   rank: number;
@@ -21,9 +23,11 @@ export interface CandidateResult {
   visible_text?: string;
   aria_label?: string;
   placeholder?: string;
+  data_qa?: string;
   id?: string;
   is_visible: boolean;
   is_enabled: boolean;
+  is_editable?: boolean;
   score: Record<string, number>;
   chosen?: boolean;
 }
@@ -34,6 +38,8 @@ export interface StepResult {
   step_block?: string;
   command_type: string;
   page_url?: string;
+  /** Whether the step had to find an element at all. */
+  target_required?: boolean;
   target_query?: string;
   type_hint?: string;
   candidates_considered?: number;
@@ -52,6 +58,7 @@ export interface StepResult {
 export interface HuntResult {
   hunt_file: string;
   title?: string;
+  context?: string;
   total_steps: number;
   passed: number;
   failed: number;
@@ -81,12 +88,17 @@ export interface ExplainEvent {
   heuristic_match?: string | null;
 }
 
-export type DebugCommand = 'next' | 'continue' | 'debug-stop' | 'abort' | 'highlight' | 'explain-next';
+/** Runtime variables at a pause, name → value, the most specific scope winning. */
+export type VarsEvent = Record<string, string>;
+
+export type DebugCommand = 'next' | 'continue' | 'debug-stop' | 'abort' | 'highlight' | 'explain-next' | 'vars';
 
 export interface RunOptions {
   /** `chromium`, `firefox`, or empty to leave it to the config file. */
   browser?: string;
   channel?: string;
+  /** A BCP 47 tag such as `uk-UA`, or empty to leave it to the config file. */
+  locale?: string;
   /** Undefined leaves it to the config file. */
   headless?: boolean;
   retries?: number;
@@ -122,6 +134,7 @@ export function buildArgs(
   add('jsonl');
   if (opts.browser) add('browser', opts.browser);
   if (opts.channel) add('channel', opts.channel);
+  if (opts.locale) add('locale', opts.locale);
   if (opts.headless === true) add('headless');
   if (opts.headless === false && supports(engine, 'headless')) args.push('--headless=false');
   if (opts.retries && opts.retries > 0) add('retries', String(opts.retries));
@@ -159,6 +172,7 @@ export type StdoutEvent =
   | { kind: 'result'; data: HuntResult }
   | { kind: 'pause'; data: PauseEvent }
   | { kind: 'explain'; data: ExplainEvent }
+  | { kind: 'vars'; data: VarsEvent }
   | { kind: 'text'; data: string };
 
 /** One line of the engine's stdout, classified. Never throws. */
@@ -184,6 +198,20 @@ export function parseStdoutLine(line: string): StdoutEvent | undefined {
       return undefined;
     }
   }
+  const vars = marker(VARS_MARKER);
+  if (vars !== undefined) {
+    try {
+      const obj = JSON.parse(vars) as unknown;
+      if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+        const out: VarsEvent = {};
+        for (const [k, v] of Object.entries(obj)) out[k] = typeof v === 'string' ? v : JSON.stringify(v);
+        return { kind: 'vars', data: out };
+      }
+    } catch {
+      // Fall through: a malformed answer is not worth a crash.
+    }
+    return { kind: 'vars', data: {} };
+  }
   if (line.startsWith('{')) {
     try {
       const obj = JSON.parse(line) as { event?: string; data?: unknown };
@@ -201,6 +229,7 @@ export interface HuntRunEvents {
   result: [HuntResult];
   pause: [PauseEvent];
   explain: [ExplainEvent];
+  vars: [VarsEvent];
   /** Human-readable output: the engine's stderr and anything unrecognised. */
   log: [string];
   exit: [{ code: number | null; signal: NodeJS.Signals | null; error?: Error }];
@@ -242,6 +271,7 @@ export class HuntRun extends EventEmitter<HuntRunEvents> {
       else if (ev.kind === 'step') this.emit('step', ev.data);
       else if (ev.kind === 'result') this.emit('result', ev.data);
       else if (ev.kind === 'pause') this.emit('pause', ev.data);
+      else if (ev.kind === 'vars') this.emit('vars', ev.data);
       else this.emit('explain', ev.data);
     };
 

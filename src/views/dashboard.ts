@@ -30,6 +30,7 @@ const COMMANDS = new Set([
   'debugContinue',
   'debugExplain',
   'debugHighlight',
+  'debugVars',
   'selectEngine',
   'doctor',
   'newHunt',
@@ -79,6 +80,7 @@ const BODY = `
     <button data-cmd="debugContinue" title="F5">Continue</button>
     <button data-cmd="debugExplain">Explain</button>
     <button data-cmd="debugHighlight">Show target</button>
+    <button data-cmd="debugVars">Variables</button>
     <button data-cmd="stop" title="Shift+F5">Stop</button>
   </div>
   <div class="buttons" style="margin-top:10px" id="runningButtons" hidden>

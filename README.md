@@ -111,6 +111,7 @@ run pauses before every step.
 | `Shift+F5` | stop |
 | **Explain** | score the target of the paused step without running it |
 | **Show target** | scroll the browser to the element that would be used |
+| **Variables** | list the variables the hunt holds at this step (engine 0.1.6+) |
 
 Debug runs always show the browser window.
 
@@ -141,10 +142,11 @@ the interpreter for it can actually import the binding.
 | `manulBrowser.hooks.path` | *(find it)* | A specific hook script |
 | `manulBrowser.run.browser` | `config` | `chromium`, `firefox`, or leave it to the config file |
 | `manulBrowser.run.channel` | | `chrome`, `msedge`, `firefox-dev`, … |
+| `manulBrowser.run.locale` | *(config)* | Browser language, e.g. `uk-UA`; the same on Chromium and Firefox |
 | `manulBrowser.run.headless` | `config` | `on`, `off`, or leave it to the config file |
 | `manulBrowser.run.retries` | `0` | Re-run a failed hunt; a later pass is reported as flaky |
 | `manulBrowser.run.screenshot` | `config` | `on-fail`, `always`, `none` |
-| `manulBrowser.run.htmlReport` | `false` | Write `reports/manul_report.html` |
+| `manulBrowser.run.htmlReport` | `false` | Write a report per hunt under `reports/`; **Open HTML Report** opens the newest |
 | `manulBrowser.run.explain` | `false` | Print score breakdowns |
 | `manulBrowser.run.workers` | `1` | Hunt files run at once from the Test Explorer |
 | `manulBrowser.run.extraArgs` | `[]` | Extra engine arguments |
@@ -155,8 +157,9 @@ the interpreter for it can actually import the binding.
 ## Requirements
 
 - VS Code 1.90 or later.
-- A `manul-browser` engine, 0.1.2 or later for everything described here.
-  Older builds run, with the options they lack left out.
+- A `manul-browser` engine, 0.1.6 or later for everything described here.
+  Older builds run, with the options they lack left out; **Check Setup**
+  says what an older one is missing.
 - Chrome, Chromium, Edge or Firefox for the engine to drive.
 
 ## Development
@@ -165,6 +168,14 @@ the interpreter for it can actually import the binding.
 npm install
 npm test            # unit tests, no browser needed
 npm run package     # builds the .vsix
+```
+
+`data/dsl.json` and `schemas/manul.config.schema.json` are copies of the
+engine's DSL and config contracts. Regenerate them, never edit them, from a
+checkout of `manul-browser`:
+
+```bash
+node scripts/sync-contracts.mjs ../manul-browser
 ```
 
 A push to `main` whose `package.json` version has no GitHub Release yet gets

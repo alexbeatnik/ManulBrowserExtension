@@ -1,12 +1,12 @@
 {
- "version": "0.1.2",
+ "version": "0.1.6",
  "commands": [
   {
    "id": "navigate",
    "label": "NAVIGATE",
    "uiText": "NAVIGATE to ''",
    "snippet": "NAVIGATE to ${1:url}",
-   "description": "Navigates the browser to a specific URL and waits for DOM settlement.",
+   "description": "Navigates the browser to a specific URL and waits for the page to finish loading, for at most nav_timeout (30s by default). A navigation the browser could not make — a host that does not resolve, a refused connection — fails the step with the browser's own error, on both backends. A plain http:// URL is loaded as given: Chromium is launched with its HTTPS-First and HTTPS-Upgrades features off, which from Chrome 154 otherwise refuse an http-only site with net::ERR_BLOCKED_BY_CLIENT. When the time runs out, a document that has already been parsed is carried on with and a warning logged: it is a usable page held up by a resource that may never arrive. One that has not been parsed fails the step with a navigation timeout.",
    "category": "navigation"
   },
   {
@@ -18,11 +18,19 @@
    "category": "navigation"
   },
   {
+   "id": "switch_tab",
+   "label": "SWITCH TO TAB",
+   "uiText": "SWITCH TO TAB 1",
+   "snippet": "SWITCH TO TAB ${1:1}",
+   "description": "Makes another open tab the one the next steps run on, and brings it to the front. The argument is a position — 1 is the tab the hunt began on, then each tab a step opened, in the order they were opened, counting open tabs only — or quoted text, which picks the first open tab whose title or URL contains it, ignoring case. SWITCH TAB is the same verb. Only the tab the hunt began on and the tabs it has followed are counted; other tabs the browser has open are not. A position past the last open tab, text no tab has, or an argument that is neither fails the step. Following a newly opened tab needs no SWITCH; going back to one that is still open does.",
+   "category": "navigation"
+  },
+  {
    "id": "click",
    "label": "CLICK",
    "uiText": "CLICK the ''",
    "snippet": "CLICK the '${1:target}'${2: button}",
-   "description": "Clicks a resolved element. Detected by the 'click' verb (case-insensitive). Element type hint (button, link, element) after the target is optional but recommended for scoring accuracy. Interaction mode: clickable.",
+   "description": "Clicks a resolved element. Detected by the 'click' verb (case-insensitive). Element type hint (button, link, element) after the target is optional but recommended for scoring accuracy. The click is dispatched at the centre of the element, the pointer moved there first, so it would go to whatever is on top of it there. When that is not the element, something inside it, something it is inside, or the <label> it belongs to, the engine waits up to about 1.5s for it to clear and then fails the step naming what is in the way (for example an open date picker or a modal backdrop) — nothing is clicked. After the click the engine waits for any navigation it set off: it marks the document first, and if the page starts to leave it (beforeunload) waits, for at most nav_timeout, until another document has replaced it and finished loading. Until then the old document still reports readyState 'complete', so the next step would run on a page that is about to go. Interaction mode: clickable.",
    "category": "interaction"
   },
   {
@@ -30,7 +38,7 @@
    "label": "DOUBLE CLICK",
    "uiText": "DOUBLE CLICK the ''",
    "snippet": "DOUBLE CLICK the '${1:target}'",
-   "description": "Double-clicks a resolved element. Detected by the 'double' + 'click' verbs (case-insensitive). Interaction mode: clickable.",
+   "description": "Double-clicks a resolved element. Detected by the 'double' + 'click' verbs (case-insensitive). A covered target fails the step, as for CLICK. The snapshot cache is dropped afterwards, so the next step sees what the double click opened. Interaction mode: clickable.",
    "category": "interaction"
   },
   {
@@ -38,7 +46,7 @@
    "label": "CHECK",
    "uiText": "CHECK the checkbox for ''",
    "snippet": "CHECK the checkbox for '${1:target}'",
-   "description": "Checks a checkbox element. Detected by the 'check' verb (case-insensitive). Interaction mode: clickable.",
+   "description": "Checks a checkbox element. Detected by the 'check' verb (case-insensitive). The target may be the box itself, its <label>, or a caption beside it in the same cell, row or block, or text in the same element as the box (<div><input type=checkbox> Agree to the <a>Terms</a></div>). Afterwards the state is read off the control that was acted on; only if the page cannot report it is the box looked up again by name, and a retry never touches a checkbox that does not carry the target. Several boxes whose captions are bare text in one element (<input type=checkbox> checkbox 1<br><input type=checkbox> checkbox 2) are told apart by the text after each box, up to the next box or line break — that text is the box's own label when it has no <label>, so such a box is found by its caption whether or not anything around it is; when the target names an element holding several boxes and none is captioned with it, the step fails with failure_reason not_found instead of acting on the first. Interaction mode: clickable.",
    "category": "interaction"
   },
   {
@@ -46,7 +54,7 @@
    "label": "UNCHECK",
    "uiText": "UNCHECK the checkbox for ''",
    "snippet": "UNCHECK the checkbox for '${1:target}'",
-   "description": "Unchecks a checkbox element. Detected by the 'uncheck' verb (case-insensitive). Interaction mode: clickable.",
+   "description": "Unchecks a checkbox element. Detected by the 'uncheck' verb (case-insensitive). Resolved and verified as CHECK is. Interaction mode: clickable.",
    "category": "interaction"
   },
   {
@@ -54,7 +62,7 @@
    "label": "FILL",
    "uiText": "FILL '' field with ''",
    "snippet": "FILL '${1:target}' field with '${2:value}'",
-   "description": "Types text into a resolved input/textarea element. Detected by the 'fill' verb (case-insensitive). Element type hint (field, input) is optional but recommended. Interaction mode: input.",
+   "description": "Types text into a resolved input/textarea element. Detected by the 'fill' verb (case-insensitive). Element type hint (field, input) is optional but recommended. The element typed into must be a field that takes text (an input, textarea, editable element, or a <select>): a caption, heading or table header that matches the target is how the field beside or below it is found, and a step that resolves to no field fails with failure_reason not_found instead of passing with the value written nowhere. A text field the target names that is disabled fails the step with failure_reason action_failed and says so, rather than resolving to some text that mentions it. An <input> or <textarea> is scrolled to the middle of its scrolling boxes first, and if something else is still on top of its centre after about 1.5s the step fails naming it and nothing is typed. Interaction mode: input.",
    "category": "interaction"
   },
   {
@@ -62,7 +70,7 @@
    "label": "TYPE",
    "uiText": "TYPE '' into ''",
    "snippet": "TYPE '${1:value}' into '${2:target}'",
-   "description": "Types text into a resolved element. Detected by the 'type' verb (case-insensitive). Interaction mode: input.",
+   "description": "Types text into a resolved element. Detected by the 'type' verb (case-insensitive). The element must be a field that takes text, as for FILL. Interaction mode: input.",
    "category": "interaction"
   },
   {
@@ -70,7 +78,7 @@
    "label": "SELECT",
    "uiText": "SELECT '' from the '' dropdown",
    "snippet": "SELECT '${1:option}' from the '${2:target}' dropdown",
-   "description": "Selects an option from a native <select> or custom dropdown. Detected by the 'select' or 'choose' verbs (case-insensitive). Element type hint (dropdown) is optional but recommended. On a native <select> the option is matched against both its label and its value, whitespace-normalised and case-insensitively; the option is set through the native value setter and followed by input and change events. An option that matches nothing fails the step with failure_reason not_found, and the error lists the options the page does have. A custom dropdown follows the same rule: after it is opened, an option no element in the list matches fails the step rather than clicking whatever ranked first. Interaction mode: select.",
+   "description": "Selects an option from a native <select> or custom dropdown. Detected by the 'select' or 'choose' verbs (case-insensitive). Element type hint (dropdown) is optional but recommended. On a native <select> the option is matched against both its label and its value, whitespace-normalised and case-insensitively; the option is set through the native value setter and followed by input and change events, and a change that reloads the page is waited for as after a CLICK. An option that matches nothing fails the step with failure_reason not_found, and the error lists the options the page does have. A custom dropdown follows the same rule: after it is opened, an option no element in the list matches fails the step rather than clicking whatever ranked first. Interaction mode: select.",
    "category": "interaction"
   },
   {
@@ -86,7 +94,7 @@
    "label": "DRAG",
    "uiText": "DRAG '' and drop it into ''",
    "snippet": "DRAG '${1:source}' and drop it into '${2:destination}'",
-   "description": "Drags one element and drops it onto another. Detected by the 'drag' + 'drop' verbs (case-insensitive). A source or destination that nothing on the page matches fails the step with failure_reason not_found. Interaction mode: drag.",
+   "description": "Drags one element and drops it onto another. Detected by the 'drag' + 'drop' verbs (case-insensitive). A source or destination that nothing on the page matches fails the step with failure_reason not_found. The drag is a pointer drag — press on the source, moves across, release on the target — which is what pointer-event libraries listen to, and on Chromium also starts a native HTML5 drag. Firefox starts none from WebDriver actions, so there a source that is or sits inside an element with draggable=\"true\" is dragged by dispatching the HTML5 drag events in the page instead: dragstart and drag on it, dragenter and dragover on the target, drop only if dragover was cancelled (a target that does not cancel it refuses the drop, as in a browser), then dragend, all sharing one DataTransfer. That substitution is made in the innermost frame under the drag, same-origin or cross-origin, so a draggable inside an iframe is dragged the same way; a drag whose two ends are in different frames is sent to the page as it is. Interaction mode: drag.",
    "category": "interaction"
   },
   {
@@ -94,7 +102,7 @@
    "label": "SCROLL DOWN",
    "uiText": "SCROLL DOWN",
    "snippet": "SCROLL DOWN${1: inside the ${2:container}}",
-   "description": "Scrolls the main page down by one viewport height, or scrolls a container to the bottom when 'inside the <container>' is appended.",
+   "description": "Scrolls the main page down by one viewport height, or scrolls a container to the bottom when 'inside the <container>' is appended. The container is resolved like any other target and may be a {placeholder}; one that is not on the page fails the step with failure_reason not_found rather than scrolling whatever ranked first.",
    "category": "navigation"
   },
   {
@@ -102,7 +110,7 @@
    "label": "WAIT",
    "uiText": "WAIT 2",
    "snippet": "WAIT ${1:seconds}",
-   "description": "Hard sleep for N seconds. Only matched when other WAIT variants (WAIT FOR RESPONSE, WAIT FOR element) do not match first.",
+   "description": "Hard sleep for N seconds. Only matched when other WAIT variants (WAIT FOR RESPONSE, WAIT FOR element) do not match first. N may be a {placeholder}; anything that is not a number by the time the step runs fails it. The snapshot cache is dropped afterwards: what was read before the wait says nothing about the page after it.",
    "category": "wait"
   },
   {
@@ -110,7 +118,7 @@
    "label": "WAIT FOR element",
    "uiText": "WAIT FOR '' to be visible",
    "snippet": "WAIT FOR '${1:target}' to ${2|be visible,be hidden,disappear|}",
-   "description": "Explicit wait for a quoted element to reach a desired state. States: visible (the default), hidden / disappear, enabled, disabled. Polls every 250ms for up to 15s, invalidating the snapshot cache each time so the wait can see the change it is waiting for. Presence is judged at ThresholdAmbiguous — the same bar the rest of the engine uses to call a target resolved — because the scorer always ranks something and 'a top candidate exists' is not 'the target is present'.",
+   "description": "Explicit wait for a quoted element to reach a desired state. States: visible (the default), hidden / disappear, enabled, disabled. Polls every 250ms for up to 15s, invalidating the snapshot cache each time so the wait can see the change it is waiting for. A state other than these fails the step at once. Presence is judged at ThresholdAmbiguous — the same bar the rest of the engine uses to call a target resolved — because the scorer always ranks something and 'a top candidate exists' is not 'the target is present'. Only an element that carries the target whole can be the one awaited: as a phrase in its text, label, placeholder, aria-label, title, name, value or test id, or as its id. Sharing a word with the target is not enough, or 'A checkbox' would stay present for as long as any sentence on the page mentioned checkboxes.",
    "category": "wait"
   },
   {
@@ -126,7 +134,7 @@
    "label": "WAIT FOR RESPONSE",
    "uiText": "WAIT FOR RESPONSE \"\"",
    "snippet": "WAIT FOR RESPONSE \"${1:url_pattern}\"",
-   "description": "Blocks until a network response whose URL ends with the pattern arrives (suffix match, on both the CDP and the BiDi backend).",
+   "description": "Blocks until a network response whose URL ends with the pattern arrives (suffix match, on both the CDP and the BiDi backend), for at most nav_timeout; the step fails when none does. Only responses that arrive after the step has started are seen: one that the previous step triggered and that had already come back by then is not, while one it triggered that is still on its way is. Firefox reports a response only for a request that began while the session was subscribed, so a BiDi page subscribes to network.responseCompleted when it opens rather than when the wait starts.",
    "category": "wait"
   },
   {
@@ -134,7 +142,7 @@
    "label": "EXTRACT",
    "uiText": "EXTRACT the '' into {variable}",
    "snippet": "EXTRACT the '${1:target}' into {${2:variable}}",
-   "description": "Extracts the text content of a resolved element and stores it into a runtime variable for use in subsequent steps.",
+   "description": "Extracts the text content of a resolved element and stores it into a runtime variable for use in subsequent steps. A target that names a form control reads what the control currently holds instead of the text around it — this is how a value written by FILL is read back. The control is named when its label, placeholder, aria-label, title, name, id or test id is the target (case, surrounding whitespace and a trailing ':' or '*' aside), when the text the target matched turns out to be its <label>, or — for a control with no name of its own — when the element just before it is a caption that reads exactly as the target (\"<p>Number</p><input>\", or the table cell beside the one holding the field). An <input> or <textarea> answers with its value, a <select> with the option it shows as selected (the option text, not its value attribute), a contenteditable or role=textbox element with its text. An empty control extracts as an empty string and the step passes; text that is not found, or is empty, still fails the step. Checkboxes, radios, buttons and file inputs are not read this way. What the main document does not have is looked for in each iframe in turn, and the first that answers is read. In a table — <table> with <th>/<td>, or one drawn with ARIA roles (role=table/grid, columnheader, row, cell/gridcell) — a target naming a row and a column ('Chrome CPU') reads that cell. Elsewhere, a target that is a caption gives the value it captions, not the caption: \"Price: $24.50\" extracts as \"$24.50\" for 'Price' (after ':', '=' or a dash, or after a space when what follows starts like a number or an amount: \"Order 1234\", \"Weight 2 kg\"), and an element that is only the caption — a <dt>, <th> or <label>, text ending in ':', or one followed by a <dd> — gives the text of the element after it (<dt>Total</dt><dd>42 items</dd> extracts as \"42 items\"). A target can also be an element's id or test id (data-testid, data-qa, data-test), as 'order-total' names <span id=\"order-total\">$61.20</span>: the element's own text is the value, split from a caption only when the caption is the target itself. An element captioned by the target is preferred over one that merely contains it, the shortest first, so 'Order' reads \"Order 1234\" rather than the heading \"Order summary\". Text that does not read as a caption comes back whole: 'Manul Plush' on a heading \"Manul Plush\", 'Gift' on \"Gift wrap\".",
    "category": "data"
   },
   {
@@ -142,7 +150,7 @@
    "label": "VERIFY",
    "uiText": "VERIFY that '' is present",
    "snippet": "VERIFY that '${1:target}' is ${2|present,NOT present,ENABLED,DISABLED,checked,NOT checked|}",
-   "description": "Asserts that an element or text is present, not present, enabled, disabled, checked, or not checked. Fails the mission on mismatch. State is read off the element whether or not it is disabled — 'is disabled' finds the disabled control, and a read-only checkbox still reports 'is checked'. A text check that could not read the page at all fails rather than concluding the text is absent.",
+   "description": "Asserts that an element or text is present, not present, enabled, disabled, checked, or not checked. Fails the mission on mismatch. State is read off the element whether or not it is disabled — 'is disabled' finds the disabled control, and a read-only checkbox still reports 'is checked'. Text that cannot be seen is not present: what is display:none, visibility:hidden, or transparent — opacity under 0.01, on the element or on any element around it — is left out, so a faded-out notice or a button hidden by opacity:0 makes 'is NOT present' pass. Text shown once and also present transparently elsewhere is still present. Text compares the way it reads: case-insensitively, with every run of whitespace, line breaks and no-break spaces included, counted as one space on both sides, so two spans shown on one line as 'Shopping cart (1)' match although the page's innerText breaks them apart. A text check that could not read the page at all fails rather than concluding the text is absent. The text read includes that of every shadow root however deeply nested, a top-level child of each at a time, so text drawn by web components (archive.org, Lit and Stencil apps) is seen, and so is the text of every <iframe>, nested ones included. A cross-origin iframe's text is read as well. A text check polls for up to the step timeout until it is satisfied: 'is present' until the text appears, 'is NOT present' until it is gone — so a negated check passes on the first look when the text is absent, and waits for text that is still disappearing.",
    "category": "assertion"
   },
   {
@@ -158,7 +166,7 @@
    "label": "VERIFY strict placeholder",
    "uiText": "VERIFY '' field has placeholder ''",
    "snippet": "VERIFY '${1:element_name}' ${2|button,field,element,input|} has placeholder '${3:Expected Placeholder}'",
-   "description": "Strict placeholder verification. Resolves the element via heuristics, reads its placeholder attribute, and asserts exact equality against the expected placeholder.",
+   "description": "Strict placeholder verification. Resolves the element via heuristics, reads its placeholder attribute, and asserts exact equality against the expected placeholder. As with the value form, a <label> is never the element resolved and a disabled field is.",
    "category": "assertion"
   },
   {
@@ -166,7 +174,7 @@
    "label": "VERIFY strict value",
    "uiText": "VERIFY '' field has value ''",
    "snippet": "VERIFY '${1:element_name}' ${2|button,field,element,input|} has value '${3:Expected Value}'",
-   "description": "Strict value verification. Resolves the element via heuristics, reads its current value via locator.input_value() with a value-attribute fallback, normalizes missing values to an empty string, and asserts exact equality against the expected value.",
+   "description": "Strict value verification. Resolves the element via heuristics, reads its current value via locator.input_value() with a value-attribute fallback, normalizes missing values to an empty string, and asserts exact equality against the expected value. A <label> is never the element resolved — it has no value, only the field's name — and a disabled field is resolved like any other. When what matches the target best is a caption with no value of its own (<p>Number</p><input>, an <h3> over a <select>), the field beside it is read, found as FILL and SELECT find it.",
    "category": "assertion"
   },
   {
@@ -198,7 +206,7 @@
    "label": "PRESS",
    "uiText": "PRESS Escape",
    "snippet": "PRESS ${1:Key}${2: on '${3:target}'}",
-   "description": "Presses any key or key combination globally (e.g. PRESS Escape, PRESS Control+A), or on a specific resolved element when 'on <target>' is appended. A chord holds its modifiers (Control/Ctrl, Alt/Option, Meta/Cmd, Shift) around the last key. With 'on <target>' the target is focused first — a field if one matches, otherwise anything clickable — and a target nothing matches fails the step instead of pressing the key wherever focus happens to be.",
+   "description": "Presses any key or key combination globally (e.g. PRESS Escape, PRESS Control+A), or on a specific resolved element when 'on <target>' is appended. A chord holds its modifiers (Control/Ctrl, Alt/Option, Meta/Cmd, Shift) around the last key. With 'on <target>' the target is focused first — a field if one matches, otherwise anything clickable — and a target nothing matches fails the step instead of pressing the key wherever focus happens to be. A key that sets off a navigation, such as Enter in a form field, is waited for as after a CLICK.",
    "category": "keyboard"
   },
   {
@@ -206,7 +214,7 @@
    "label": "RIGHT CLICK",
    "uiText": "RIGHT CLICK ''",
    "snippet": "RIGHT CLICK '${1:target}'",
-   "description": "Right-clicks a resolved element to open a context menu.",
+   "description": "Right-clicks a resolved element to open a context menu. A covered target fails the step, as for CLICK. The snapshot cache is dropped afterwards, so the next step can target an item of the menu it opened.",
    "category": "interaction"
   },
   {
@@ -214,7 +222,7 @@
    "label": "UPLOAD",
    "uiText": "UPLOAD '' to ''",
    "snippet": "UPLOAD '${1:file_path}' to '${2:target}'",
-   "description": "Uploads a file to a file-input element. Both file path and target must be quoted. Path resolved relative to the .hunt file directory, then CWD.",
+   "description": "Uploads a file to a file-input element. Both file path and target must be quoted. Path resolved relative to the .hunt file directory, then CWD, and handed to the browser as an absolute path. A path that names no file fails the step before the browser is asked.",
    "category": "interaction"
   },
   {
@@ -222,7 +230,7 @@
    "label": "MOCK",
    "uiText": "MOCK GET \"\" with ''",
    "snippet": "MOCK ${1|GET,POST,PUT,PATCH,DELETE|} \"${2:url_pattern}\" with '${3:mock_file}'",
-   "description": "Intercepts matching network requests via CDP request interception and fulfills from a local mock file. Supported HTTP methods: GET, POST, PUT, PATCH, DELETE.",
+   "description": "Answers matching network requests from a local file instead of from the network, by request interception: the Fetch domain over CDP, network intercepts over WebDriver BiDi. The pattern is matched against the end of the request URL, query string included, and '*' stands for any run of characters — \"/api/users\" answers https://host/v1/api/users, \"/api/users*\" also answers it with a query string. Any request is covered, whatever makes it: a navigation, fetch, XMLHttpRequest, an image. A rule holds for the rest of the session, across navigations; a later MOCK for the same method and pattern replaces it. The response has status 200 and a Content-Type of application/json for a .json file and text/plain otherwise. A cross-origin request gets the CORS headers it needs, and its preflight is answered too. The HTTP cache is bypassed from the first MOCK on, since a cached response is never requested. The mock file is resolved relative to the .hunt file directory, then CWD. Supported HTTP methods: GET, POST, PUT, PATCH, DELETE.",
    "category": "network"
   },
   {
@@ -278,7 +286,7 @@
    "label": "SCAN PAGE",
    "uiText": "SCAN PAGE",
    "snippet": "SCAN PAGE${1: into {${2:filename}}}",
-   "description": "Scans the current page and prints a draft .hunt to the console, optionally writing it to a file with 'into {filename}' or 'to {filename}'. Complements the `scan` CLI subcommand, which needs a URL: these verbs work on a page you can only reach by driving there — behind a login, or three steps into a flow.",
+   "description": "Scans the current page and prints a draft .hunt to the console, optionally writing it to a file with 'into {filename}' or 'to {filename}' — relative to the working directory, with any missing directories created. Complements the `scan` CLI subcommand, which needs a URL: these verbs work on a page you can only reach by driving there — behind a login, or three steps into a flow.",
    "category": "utility"
   },
   {
@@ -326,7 +334,7 @@
    "label": "IF",
    "uiText": "IF button 'Save' exists:",
    "snippet": "IF ${1:condition}:\n        ${2:action}",
-   "description": "Block-style conditional branching. Body lines are indented by 4 extra spaces. Supports ELIF and ELSE branches, in the mission body and inside [SETUP] / [TEARDOWN] alike. Nesting supported. Conditions: element exists, text present, variable comparison/contains/truthy; their keywords are case-insensitive ('is NOT present').",
+   "description": "Block-style conditional branching. Body lines are indented by 4 extra spaces. Supports ELIF and ELSE branches, in the mission body and inside [SETUP] / [TEARDOWN] alike. Nesting supported. Conditions: element exists, text present, variable comparison/contains/truthy; their keywords are case-insensitive ('is NOT present') and read outside the quotes, so a label or a compared value may contain them. The target may be in single or double quotes and may be a {placeholder}. 'not exists' and 'does not exist' are the same negation. An element counts as existing only when it carries the target itself, not merely because it ranked first.",
    "category": "control_flow"
   },
   {
@@ -350,7 +358,7 @@
    "label": "REPEAT",
    "uiText": "REPEAT 3 TIMES:",
    "snippet": "REPEAT ${1:N} TIMES:\n        ${2:action}",
-   "description": "Fixed-count loop. Body lines are indented by 4 extra spaces. The counter variable is {i} unless the header names another with 'REPEAT N TIMES as {name}:', and counts from 0. Nesting supported.",
+   "description": "Fixed-count loop. Body lines are indented by 4 extra spaces. The counter variable is {i} unless the header names another with 'REPEAT N TIMES as {name}:', and counts from 0. N may be a {placeholder} set while the hunt runs; a count that is not a number by then fails the step instead of looping zero times. Nesting supported.",
    "category": "control_flow"
   },
   {
@@ -358,7 +366,7 @@
    "label": "FOR EACH",
    "uiText": "FOR EACH {item} IN {items}:",
    "snippet": "FOR EACH {${1:var}} IN {${2:collection}}:\n        ${3:action}",
-   "description": "Iterate over comma-separated values from a variable. On each iteration the loop variable is set to the next value. Nesting supported.",
+   "description": "Iterate over comma-separated values from a variable. On each iteration the loop variable is set to the next value. Nesting supported. A collection that is not the name of a variable is taken as the list itself, which is also what a collection declared with @var: is by the time the loop runs: @var: values are substituted into the line at parse time, unless the hunt assigns to the name or is data-driven (see @var:).",
    "category": "control_flow"
   },
   {
@@ -366,7 +374,7 @@
    "label": "WHILE",
    "uiText": "WHILE button 'Next' exists:",
    "snippet": "WHILE ${1:condition}:\n        ${2:action}",
-   "description": "Repeat while condition is true. Uses same conditions as IF blocks. Safety limit: 100 iterations. Nesting supported.",
+   "description": "Repeat while condition is true. Uses same conditions as IF blocks. The condition is evaluated against the page as it is at each pass, not against a cached snapshot. Safety limit: 100 iterations. Nesting supported.",
    "category": "control_flow"
   }
  ],
@@ -397,7 +405,7 @@
    "label": "@var:",
    "uiText": "@var: {key} = value",
    "snippet": "@var: {${1:key}} = ${2:value}",
-   "description": "Declares a static variable pre-populated into runtime memory before any step runs. Available as {key} placeholder in all steps."
+   "description": "Declares a variable pre-populated into runtime memory before any step runs. Available as {key} placeholder in all steps. A value may use variables declared above it; they are resolved once, in file order. The value is written into each line at parse time unless the hunt can change it: a name the hunt assigns to anywhere (SET {key} = …, … into {key}, FOR EACH {key} IN …, REPEAT … as {key}) stays a placeholder that the runtime resolves, starting from the declared value, and in a hunt with @data: every name does, so a column of the data file overrides the declaration of the same name."
   },
   {
    "id": "script",
@@ -425,7 +433,7 @@
    "label": "@import:",
    "uiText": "@import: Login, Logout from lib/auth.hunt",
    "snippet": "@import: ${1:BlockName} from ${2:source.hunt}",
-   "description": "Imports named STEP blocks from another .hunt file. Supports named imports (@import: Login, Logout from lib.hunt), wildcard (@import: * from lib.hunt), aliases (@import: Login as AuthLogin from lib.hunt), and package-style sources (@import: Login from @my-lib). Imported blocks are available for USE directives. @var: declarations from the source file are inherited at LEVEL_IMPORT (lowest priority)."
+   "description": "Imports named STEP blocks from another .hunt file. Supports named imports (@import: Login, Logout from lib.hunt), wildcard (@import: * from lib.hunt) and aliases (@import: Login as AuthLogin from lib.hunt). The source is a path relative to the importing file's directory, or an absolute path. Imported blocks are available for USE directives. @var: declarations from the source file, and from whatever it imports in turn, are inherited at LEVEL_IMPORT (lowest priority): they stay {placeholders} in the imported steps, so the importing hunt's own @var:, a data row or a global overrides them. When two imports declare the same name, the first keeps it. A count the parser reads itself (REPEAT {n} TIMES, WAIT {n}) is the exception, written in from the source file's own value."
   },
   {
    "id": "export",
@@ -442,7 +450,7 @@
    "openTag": "[SETUP]",
    "closeTag": "[END SETUP]",
    "snippet": "[SETUP]\n    PRINT \"${1:Preparing setup}\"\n    CALL GO ${2:module}.${3:function}${4: with args: \"${5:arg}\"}${6: into {${7:variable}}}\n[END SETUP]",
-   "description": "Block of PRINT and CALL GO lines executed BEFORE the browser launches. If any line fails, the mission is marked as broken and browser steps are skipped. Teardown is not called when setup fails. Target functions must be synchronous."
+   "description": "Block of PRINT and CALL GO lines executed BEFORE the browser launches. If any line fails, the mission is marked as broken and browser steps are skipped. Teardown still runs when setup fails. Target functions must be synchronous."
   },
   {
    "id": "teardown",
@@ -450,14 +458,14 @@
    "openTag": "[TEARDOWN]",
    "closeTag": "[END TEARDOWN]",
    "snippet": "[TEARDOWN]\n    PRINT \"${1:Cleaning up}\"\n    CALL GO ${2:module}.${3:function}${4: with args: \"${5:arg}\"}\n[END TEARDOWN]",
-   "description": "Cleanup block executed after the mission body in a finally block. It runs only when [SETUP] succeeded. Failure is logged but does not override the mission result."
+   "description": "Cleanup block executed after the mission body in a finally block. It runs whether [SETUP] and the mission passed or failed — a setup that got halfway still has something to clean up. Failure is logged but does not override the mission result."
   }
  ],
  "qualifiers": [
   {
    "id": "near",
    "syntax": "<action> NEAR '<anchor>'",
-   "description": "Biases candidate ranking by Euclidean distance to a resolved anchor element. Used for repeated buttons, links, and fields located close to a known label or neighboring control."
+   "description": "Biases candidate ranking by Euclidean distance to a resolved anchor element. Used for repeated buttons, links, and fields located close to a known label or neighboring control. The anchor is resolved among the page's snapshot elements, which include headings (h1–h6) as well as controls, cells and text blocks, so a product title in an <h3> anchors its own card rather than the list around it."
   },
   {
    "id": "on_header",
@@ -472,7 +480,7 @@
   {
    "id": "inside_row",
    "syntax": "<action> INSIDE '<container>' row with '<text>'",
-   "description": "Resolves the row text first, climbs to a container boundary such as tr, li, or div[role=row], and restricts candidate scoring to that subtree before normal action scoring continues."
+   "description": "Resolves the container first and keeps only its descendants, then finds the row text among them, climbs to its table row (tr), and restricts candidate scoring to that row before normal action scoring continues. 'INSIDE 'Users' row with 'John'' is therefore the John row of the Users table, even when another table has a John row too. Without 'row with', INSIDE restricts to the container's descendants alone. The container is the best-ranked of the top five matches that has snapshot elements inside it, so a heading that names a section never stands in for the section."
   }
  ]
 }

@@ -146,11 +146,15 @@ function scanPython(lines: string[]): HookHandler[] {
     if (kind === 'before_all' || kind === 'after_all') {
       out.push({ kind, name: '', page: '', handler, line });
     } else if (kind === 'custom_control') {
-      const positional = args.match(new RegExp(`^\\(\\s*${QUOTED}`));
+      // custom_control(page=ANY_PAGE, target=""): positionally the page comes
+      // first, and it may be a name such as manul.ANY_PAGE rather than text.
+      const positional = args.match(new RegExp(`^\\(\\s*(?:${QUOTED}|([\\w.]+))\\s*,\\s*${QUOTED}`));
+      const page = positional ? (positional[1] ?? positional[2] ?? positional[3] ?? '') : '';
+      const target = positional ? (positional[5] ?? positional[6] ?? positional[7] ?? '') : '';
       out.push({
         kind,
-        name: keywordArg(args, 'target') || (positional ? firstGroup(positional, 1) : ''),
-        page: keywordArg(args, 'page'),
+        name: keywordArg(args, 'target') || target,
+        page: keywordArg(args, 'page') || (page === '*' ? '' : page),
         handler,
         line,
       });
@@ -186,7 +190,9 @@ function scanJs(lines: string[]): HookHandler[] {
     if (kind === 'before_all' || kind === 'after_all') {
       out.push({ kind, name: '', page: '', handler, line });
     } else if (kind === 'custom_control' && /^\s*\{/.test(args)) {
-      out.push({ kind, name: keywordArg(args, 'target'), page: keywordArg(args, 'page'), handler, line });
+      const page = keywordArg(args, 'page');
+      // '*' is ANY_PAGE, the same as leaving the page out.
+      out.push({ kind, name: keywordArg(args, 'target'), page: page === '*' ? '' : page, handler, line });
     } else {
       const arg = args.match(new RegExp(`^\\s*${QUOTED}`));
       if (!arg) return;
