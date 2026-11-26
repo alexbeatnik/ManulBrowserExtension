@@ -2,7 +2,7 @@
   "name": "manul-browser",
   "displayName": "Manul Browser",
   "description": "Write and run browser automation in plain English. Runs .hunt files with the manul-browser engine from npm, PyPI or a Go build, with a test explorer, step-by-step debugging and automatic hook pickup.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "alexbeatnik",
   "license": "Apache-2.0",
   "author": "Oleksii Poliakov",
