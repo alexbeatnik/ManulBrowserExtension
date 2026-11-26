@@ -4,6 +4,8 @@ import * as vscode from 'vscode';
 
 import { sourceLabel } from './core/engine';
 import { hookTemplate } from './core/hooks';
+import { indentForInsert } from './core/huntDoc';
+import { latestReport } from './core/reports';
 import { grouped } from './core/catalogue';
 import { runDoctor } from './doctor';
 import { registerLanguage } from './language';
@@ -64,7 +66,11 @@ export function activate(context: vscode.ExtensionContext): ManulBrowserApi {
     const line = editor.document.lineAt(editor.selection.active.line);
     // A step is a line of its own: on a line that already has text, go below it.
     if (line.text.trim() === '') {
-      await editor.insertSnippet(new vscode.SnippetString(snippet), line.range);
+      // Keep the step inside its block: a blank line's own indent, or the one
+      // the line above calls for.
+      const lines = Array.from({ length: editor.document.lineCount }, (_, i) => editor.document.lineAt(i).text);
+      const indent = indentForInsert(lines, line.lineNumber);
+      await editor.insertSnippet(new vscode.SnippetString(`${indent}${snippet}`), line.range);
     } else {
       const indent = line.text.match(/^\s*/)?.[0] ?? '';
       await editor.insertSnippet(new vscode.SnippetString(`\n${indent}${snippet}`), line.range.end);
@@ -166,6 +172,31 @@ export function activate(context: vscode.ExtensionContext): ManulBrowserApi {
   register('debugContinue', () => runs.debug('continue'));
   register('debugExplain', () => runs.debug('explain-next'));
   register('debugHighlight', () => runs.debug('highlight'));
+  register('debugVars', async () => {
+    if (!runs.paused) return;
+    // An engine before 0.1.6 does not answer; do not wait on it forever.
+    const vars = await new Promise<Record<string, string> | undefined>((resolve) => {
+      const timer = setTimeout(() => {
+        sub.dispose();
+        resolve(undefined);
+      }, 5000);
+      const sub = runs.onVars((v) => {
+        clearTimeout(timer);
+        sub.dispose();
+        resolve(v);
+      });
+      runs.debug('vars');
+    });
+    if (!vars) {
+      return void vscode.window.showInformationMessage('The engine did not report its variables. Engines before 0.1.6 cannot.');
+    }
+    const names = Object.keys(vars).sort();
+    if (names.length === 0) return void vscode.window.showInformationMessage('No variables are set at this step.');
+    await vscode.window.showQuickPick(
+      names.map((name) => ({ label: `{${name}}`, description: vars[name] })),
+      { title: 'Variables at this step', placeHolder: 'Values as the engine holds them now', matchOnDescription: true },
+    );
+  });
   register('showOutput', () => services.output.show(true));
   register('clearResults', () => results.clear());
   register('refreshHooks', () => hooksTree.refresh());
@@ -306,8 +337,8 @@ export function activate(context: vscode.ExtensionContext): ManulBrowserApi {
 
   register('openReport', async () => {
     const root = services.rootFor(activeHunt());
-    const report = root ? path.join(root, 'reports', 'manul_report.html') : '';
-    if (!report || !fs.existsSync(report)) {
+    const report = root ? latestReport(root) : undefined;
+    if (!report) {
       return void vscode.window.showInformationMessage('No report yet. Turn on "Write an HTML report" and run a hunt.');
     }
     await vscode.env.openExternal(vscode.Uri.file(report));

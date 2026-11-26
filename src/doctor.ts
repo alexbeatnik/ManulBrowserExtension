@@ -6,7 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 
-import { probeEngine, sourceLabel } from './core/engine';
+import { RECOMMENDED_ENGINE, compareVersions, probeEngine, sourceLabel } from './core/engine';
 import { hookEnvironment, hookRuntime } from './core/hooks';
 import { CONFIG_FILE, Services } from './services';
 
@@ -54,6 +54,14 @@ export async function runDoctor(services: Services, hunt?: vscode.Uri): Promise<
       ok(`${e.version} from ${sourceLabel(e.source)}${first ? '  ← used' : ''}`);
       info(e.path);
       if (first) {
+        if (compareVersions(e.version, RECOMMENDED_ENGINE) < 0) {
+          problems++;
+          bad(
+            `Engine ${e.version} is older than ${RECOMMENDED_ENGINE}. It runs, but without SWITCH TO TAB, ` +
+              `manulBrowser.run.locale (--locale), Debug: Show Variables, inline # comments ` +
+              `and the per-hunt HTML reports. Update manul-browser.`,
+          );
+        }
         for (const [flag, what] of [
           ['jsonl', 'steps cannot be reported one by one'],
           ['hooks', 'hook scripts cannot be used'],

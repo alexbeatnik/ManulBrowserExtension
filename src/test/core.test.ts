@@ -5,15 +5,16 @@ import * as path from 'node:path';
 import { test } from 'node:test';
 
 import { loadBundledCatalogue, mergeSchema, syntaxToSnippet } from '../core/catalogue';
-import { findEngines, parseFlags, parseVersion, supports } from '../core/engine';
+import { compareVersions, findEngines, parseFlags, parseVersion, supports } from '../core/engine';
 import {
   findHookScript,
   hookEnvironment,
   resolveHookScript,
   scanHookScript,
 } from '../core/hooks';
-import { StepLocator, formatHunt, parseHunt } from '../core/huntDoc';
-import { EXPLAIN_MARKER, LineSplitter, PAUSE_MARKER, buildArgs, parseStdoutLine } from '../core/runner';
+import { StepLocator, formatHunt, indentForInsert, isReportedStep, parseHunt } from '../core/huntDoc';
+import { latestReport } from '../core/reports';
+import { EXPLAIN_MARKER, LineSplitter, PAUSE_MARKER, VARS_MARKER, buildArgs, parseStdoutLine } from '../core/runner';
 
 function tmp(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'manul-ext-'));
@@ -102,6 +103,14 @@ test('version and flags are read from what the engine prints', () => {
   assert.ok(!flags.has('path'));
 });
 
+test('versions compare by number, not as text', () => {
+  assert.equal(parseVersion('manul 0.1.6\n'), '0.1.6');
+  assert.equal(compareVersions('0.1.10', '0.1.9'), 1);
+  assert.equal(compareVersions('0.1.2', '0.1.6'), -1);
+  assert.equal(compareVersions('v0.1.6', '0.1.6'), 0);
+  assert.equal(compareVersions('0.2', '0.1.6'), 1);
+});
+
 test('an engine whose help could not be read is assumed to support a flag', () => {
   const base = { path: 'x', source: 'path' as const, detail: '', version: '0.1.0' };
   assert.equal(supports({ ...base, flags: new Set() }, 'hooks'), true);
@@ -156,6 +165,15 @@ test('a Python hook script is read for what it registers', () => {
       "@manul.call('compute_total')",
       'def compute_total(ctx): return "1"',
       '',
+      '@manul.custom_control("Checkout", "Coupon")',
+      'def coupon(ctx): pass',
+      '',
+      '@manul.custom_control(manul.ANY_PAGE, "Date Picker")',
+      'def date(ctx): pass',
+      '',
+      '@manul.custom_control("*", target="Magic box")',
+      'def magic(ctx): pass',
+      '',
       'manul.serve_hooks()',
     ].join('\n'),
     'manul_hooks.py',
@@ -168,6 +186,10 @@ test('a Python hook script is read for what it registers', () => {
       ['before_group', 'smoke', '', 'seed', 6],
       ['custom_control', 'Signature Pad', 'Checkout', 'sign', 9],
       ['call', 'compute_total', '', 'compute_total', 12],
+      // Positionally the page comes first.
+      ['custom_control', 'Coupon', 'Checkout', 'coupon', 15],
+      ['custom_control', 'Date Picker', '', 'date', 18],
+      ['custom_control', 'Magic box', '', 'magic', 21],
     ],
   );
 });
@@ -185,6 +207,7 @@ test('a JavaScript hook script is read for what it registers', () => {
       "afterGroup('smoke', cleanup);",
       "customControl({ page: 'Checkout', target: 'Signature Pad' }, sign);",
       "customControl('Date Picker', (ctx) => {});",
+      "customControl({ page: '*', target: 'Magic box' }, magic);",
       "call('compute_total', (ctx) => '1');",
       'handler.call(this);',
       'await serveHooks();',
@@ -200,6 +223,7 @@ test('a JavaScript hook script is read for what it registers', () => {
       ['after_group', 'smoke', ''],
       ['custom_control', 'Signature Pad', 'Checkout'],
       ['custom_control', 'Date Picker', ''],
+      ['custom_control', 'Magic box', ''],
       ['call', 'compute_total', ''],
     ],
   );
@@ -266,6 +290,47 @@ test('reported steps are mapped back to their lines, repeats included', () => {
   assert.equal(loc.locate('no such step'), undefined);
 });
 
+test('a step the engine reports without its inline comment is still placed', () => {
+  // The engine strips a trailing "# comment" before it reports a step.
+  const hunt = [
+    'STEP 1: Tabs',
+    "    CLICK the 'Open' link   # opens a tab",
+    '    SWITCH TO TAB 1 # back',
+    "    PRESS #  # the hash key",
+    "    PRINT 'Issue # 5'",
+    'DONE.',
+  ].join('\n');
+  const loc = new StepLocator(parseHunt(hunt));
+  assert.equal(loc.locate("CLICK the 'Open' link", 'STEP 1: Tabs'), 1);
+  assert.equal(loc.locate('SWITCH TO TAB 1', 'STEP 1: Tabs'), 2);
+  assert.equal(loc.locate('PRESS #', 'STEP 1: Tabs'), 3);
+  assert.equal(loc.locate("PRINT 'Issue # 5'", 'STEP 1: Tabs'), 4);
+  // Only a comment may follow: a longer step is a different step.
+  assert.equal(isReportedStep("CLICK 'a' and more", "CLICK 'a'"), false);
+  assert.equal(isReportedStep("CLICK 'a'#x", "CLICK 'a'"), false);
+});
+
+test('an inserted step takes the indentation of the block it lands in', () => {
+  const lines = ['@title: x', '', 'STEP 1: A', '', "    CLICK 'a'", '', '    IF button \'Save\' exists:', '', '      ', 'DONE.', ''];
+  assert.equal(indentForInsert(lines, 1), '');
+  assert.equal(indentForInsert(lines, 3), '    ');
+  assert.equal(indentForInsert(lines, 5), '    ');
+  assert.equal(indentForInsert(lines, 7), '        ');
+  assert.equal(indentForInsert(lines, 8), '      ');
+  assert.equal(indentForInsert(lines, 10), '');
+});
+
+test('formatting keeps blocks whose opener carries a comment', () => {
+  assert.deepEqual(formatHunt(['STEP 1: A', "IF button 'Save' exists:  # only on edit", "  CLICK 'Save'", 'ELSE:  # new', "  CLICK 'New'", 'DONE.']), [
+    'STEP 1: A',
+    "    IF button 'Save' exists:  # only on edit",
+    "        CLICK 'Save'",
+    '    ELSE:  # new',
+    "        CLICK 'New'",
+    'DONE.',
+  ]);
+});
+
 test('formatting indents commands and nested blocks', () => {
   const src = [
     '@title: x',
@@ -306,6 +371,11 @@ test('arguments carry the hook script and leave out what the engine lacks', () =
   assert.deepEqual(args, ['run', 'a.hunt', '--jsonl', '--browser', 'firefox', '--headless']);
   assert.deepEqual(dropped, ['--hooks']);
 
+  const withLocale = buildArgs('a.hunt', { locale: 'uk-UA', browser: 'firefox' });
+  assert.deepEqual(withLocale.args, ['run', 'a.hunt', '--jsonl', '--browser', 'firefox', '--locale', 'uk-UA']);
+  const old = buildArgs('a.hunt', { locale: 'uk-UA' }, engine);
+  assert.deepEqual(old.dropped, ['--locale']);
+
   const full = buildArgs('a.hunt', { hooks: 'h.py', breakLines: [3, 9], headless: false });
   assert.deepEqual(full.args, ['run', 'a.hunt', '--jsonl', '--headless=false', '--hooks', 'h.py', '--break-lines', '3,9']);
 });
@@ -316,6 +386,9 @@ test('stdout lines are told apart', () => {
   const pause = parseStdoutLine(`${PAUSE_MARKER}{"step":"CLICK 'a'","idx":3}`);
   assert.deepEqual(pause, { kind: 'pause', data: { step: "CLICK 'a'", idx: 3 } });
   assert.equal(parseStdoutLine(`${EXPLAIN_MARKER}{"step":"s","score":0.5}`)?.kind, 'explain');
+  assert.deepEqual(parseStdoutLine(`${VARS_MARKER}{"user":"ann","n":"3"}`), { kind: 'vars', data: { user: 'ann', n: '3' } });
+  assert.deepEqual(parseStdoutLine(`${VARS_MARKER}{}`), { kind: 'vars', data: {} });
+  assert.deepEqual(parseStdoutLine(`${VARS_MARKER}oops`), { kind: 'vars', data: {} });
   assert.deepEqual(parseStdoutLine('{not json'), { kind: 'text', data: '{not json' });
   assert.equal(parseStdoutLine(''), undefined);
 });
@@ -342,6 +415,48 @@ test('the bundled catalogue loads and a newer engine can add to it', () => {
   assert.equal(merged.version, '9.9.9');
   assert.equal(merged.commands.length, cat.commands.length + 1);
   assert.equal(merged.commands.at(-1)?.snippet, "TELEPORT to '${1:place}'");
+});
+
+test('the bundled catalogue covers every verb engine 0.1.6 reports', () => {
+  const cat = loadBundledCatalogue(path.join(__dirname, '..', '..', 'data', 'dsl.json'));
+  assert.equal(cat.version, '0.1.6');
+  const schema = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'src', 'test', 'fixtures', 'schema-0.1.6.json'), 'utf8'));
+  const merged = mergeSchema(cat, schema);
+  assert.deepEqual(merged.commands.filter((c) => c.live).map((c) => c.label), []);
+  assert.ok(cat.commands.some((c) => c.label === 'SWITCH TO TAB'));
+});
+
+test('the grammar knows SWITCH TO TAB and inline comments', () => {
+  const grammar = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'syntaxes', 'hunt.tmLanguage.json'), 'utf8'));
+  const re = (name: string): RegExp => {
+    const src: string = grammar.repository[name].match;
+    return src.startsWith('(?i)') ? new RegExp(src.slice(4), 'i') : new RegExp(src);
+  };
+  const verb = re('system-keyword');
+  assert.equal("SWITCH TO TAB 'Product'".match(verb)?.[1], 'SWITCH TO TAB');
+  assert.equal('switch tab 2'.match(verb)?.[1], 'switch tab');
+  assert.equal("Right-click the 'Row'".match(verb)?.[1], 'Right-click');
+  const comment = re('inline-comment');
+  assert.equal("CLICK 'a'  # note".match(comment)?.[0], '# note');
+  assert.equal('PRESS #'.match(comment), null);
+  assert.equal('PRESS #  # the hash key'.match(comment)?.[0], '# the hash key');
+  assert.equal('WAIT FOR SELECTOR #main'.match(comment), null);
+  assert.equal('SET {c} = #fff'.match(comment), null);
+});
+
+// ── reports ─────────────────────────────────────────────────────────────────
+
+test('the newest report is found, in the per-hunt naming and the old one', () => {
+  const root = tmp();
+  assert.equal(latestReport(root), undefined);
+  const old = touch(path.join(root, 'reports', 'manul_report.html'));
+  const a = touch(path.join(root, 'reports', 'report_Login_20261126_101500_1.html'));
+  touch(path.join(root, 'reports', 'run_history.json'));
+  fs.utimesSync(old, new Date(1000), new Date(1000));
+  fs.utimesSync(a, new Date(5000), new Date(5000));
+  assert.equal(latestReport(root), a);
+  fs.utimesSync(old, new Date(9000), new Date(9000));
+  assert.equal(latestReport(root), old);
 });
 
 test('schema syntax becomes a snippet', () => {

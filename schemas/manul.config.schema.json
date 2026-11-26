@@ -1,21 +1,30 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "manul.config.json",
-  "description": "Configuration for the manul-browser engine. Command-line flags override these values; environment variables override the file.",
+  "description": "Configuration for the manul-browser engine (contract 0.1.6). Command-line flags override these values; environment variables override the file. Keys the engine does not know are ignored.",
   "type": "object",
   "properties": {
     "headless": {
       "type": "boolean",
-      "description": "Run browser in headless mode (no visible window). Environment variable: MANUL_HEADLESS.",
+      "description": "Run browser in headless mode (no visible window). The headless window is 1366×768 in both Chromium and Firefox, so a responsive site lays itself out the same way in either. Environment variable: MANUL_HEADLESS.",
       "default": false
+    },
+    "browser_mode": {
+      "type": "string",
+      "description": "Whether the engine starts its own Chrome (`launch`) or drives one that is already running (`attach`). This is the single explicit answer to that question. Empty means infer — see resolveBrowserMode. In `attach` mode the browser is NOT closed when the session ends, because the engine did not open it; launch-only keys (channel, executable_path, browser_args, headless) are ignored. Environment variable: MANUL_BROWSER_MODE.",
+      "enum": [
+        "launch",
+        "attach"
+      ]
     },
     "browser": {
       "type": "string",
+      "description": "Which browser engine to launch. `chromium` (the default) is driven over CDP; `firefox` is driven over WebDriver BiDi, because Firefox deprecated CDP in 129 and removed it in 141. WebKit/Safari are not supported. Use `channel`/`executable_path` to pick a specific binary. An unrecognised value is an error, not a silent fall back to Chromium. Environment variable: MANUL_BROWSER.",
       "enum": [
         "chromium",
         "firefox"
       ],
-      "description": "Which browser engine to launch. `chromium` (the default) is driven over CDP; `firefox` is driven over WebDriver BiDi, because Firefox deprecated CDP in 129 and removed it in 141. WebKit/Safari are not supported. Use `channel`/`executable_path` to pick a specific binary. An unrecognised value is an error, not a silent fall back to Chromium. Environment variable: MANUL_BROWSER."
+      "default": "chromium"
     },
     "browser_args": {
       "type": "array",
@@ -25,55 +34,6 @@
       "description": "Extra launch flags passed to the browser. JSON: native array. Env: comma-or-space-separated string. Environment variable: MANUL_BROWSER_ARGS.",
       "default": []
     },
-    "timeout": {
-      "type": "integer",
-      "description": "Default action timeout for click, fill, select, hover operations. Environment variable: MANUL_TIMEOUT.",
-      "default": 5000
-    },
-    "nav_timeout": {
-      "type": "integer",
-      "description": "Navigation timeout for NAVIGATE, page loads, and WAIT FOR RESPONSE. Environment variable: MANUL_NAV_TIMEOUT.",
-      "default": 30000
-    },
-    "semantic_cache_enabled": {
-      "type": "boolean",
-      "description": "Enable in-session semantic cache (learned_elements). Feeds the scorer as one channel (never bypasses scoring); provides a +200,000 scaled score boost within a single run. Resets when the engine instance is destroyed. Environment variable: MANUL_SEMANTIC_CACHE_ENABLED.",
-      "default": true
-    },
-    "custom_controls_dirs": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "Directories scanned for @custom_control Go handlers. Resolved relative to CWD. Env: comma-separated. Environment variable: MANUL_CUSTOM_CONTROLS_DIRS.",
-      "default": [
-        "controls"
-      ]
-    },
-    "log_name_maxlen": {
-      "type": "integer",
-      "description": "If > 0, truncates element names in console log output to this many characters. Environment variable: MANUL_LOG_NAME_MAXLEN.",
-      "default": 0
-    },
-    "log_thought_maxlen": {
-      "type": "integer",
-      "description": "If > 0, truncates verbose 'thought'/diagnostic strings in console log output. Environment variable: MANUL_LOG_THOUGHT_MAXLEN.",
-      "default": 0
-    },
-    "workers": {
-      "type": "integer",
-      "description": "Max hunt files to run in parallel. Each worker spawns a separate subprocess with its own browser. Forced to 1 when --debug or --break-lines is active. Environment variable: MANUL_WORKERS.",
-      "default": 1
-    },
-    "tests_home": {
-      "type": "string",
-      "description": "Default directory for new hunt files, SCAN PAGE output, and manul scan default output. JSON-only — no env var override."
-    },
-    "auto_annotate": {
-      "type": "boolean",
-      "description": "Automatically inject '# 📍 Auto-Nav: <name>' comments into .hunt files whenever the page URL changes during a run. Page names from pages.json. Environment variable: MANUL_AUTO_ANNOTATE.",
-      "default": false
-    },
     "channel": {
       "type": [
         "string",
@@ -81,6 +41,11 @@
       ],
       "description": "Browser channel — selects an installed binary of the engine named by `browser` (chrome, msedge, chromium, firefox-esr, firefox-nightly, ...). An unknown value is treated as a bare binary name to look up on PATH. Environment variable: MANUL_CHANNEL.",
       "default": null
+    },
+    "locale": {
+      "type": "string",
+      "description": "Language a launched browser uses and asks pages for, as a BCP 47 tag. It sets navigator.language and the Accept-Language header, as the tag followed by its language alone (\"uk-UA\" asks for \"uk-UA,uk\"): --lang and --accept-lang for Chromium, intl.accept_languages and intl.locale.requested for Firefox. Empty is en-US. Left to themselves the two engines differ — headless Chrome asked for en-US, Firefox for the system's language — and the same hunt met a site in two languages. A browser that is attached to (--cdp) keeps its own. Environment variable: MANUL_LOCALE.",
+      "default": "en-US"
     },
     "executable_path": {
       "type": [
@@ -98,24 +63,91 @@
       "description": "The endpoint to dial when attaching. Its scheme selects the protocol: an HTTP endpoint (e.g. http://127.0.0.1:9222) is CDP/Chromium, a WebSocket URL (e.g. ws://127.0.0.1:9222/session) is WebDriver BiDi/Firefox — a bare ws://host:port, as Firefox prints it at startup, gets /session appended. Defaults to http://127.0.0.1:9222 in attach mode. Setting it also *implies* attach when browser_mode is empty — inference kept for existing configs; prefer setting browser_mode explicitly. Environment variable: MANUL_CDP_ENDPOINT.",
       "default": null
     },
+    "timeout": {
+      "type": "integer",
+      "description": "How long a step waits for what it is waiting for. An action whose target is not on the page yet (CLICK, DOUBLE CLICK, RIGHT CLICK, FILL, TYPE, SELECT, CHECK, UNCHECK, HOVER, DRAG, UPLOAD, EXTRACT, PRESS … ON, SCROLL … inside) looks for it again every 250ms for this long before failing not_found; VERIFY polls for this long. 0 turns the waiting for a target off. In milliseconds. Environment variable: MANUL_TIMEOUT.",
+      "minimum": 0,
+      "default": 5000
+    },
+    "nav_timeout": {
+      "type": "integer",
+      "description": "Navigation timeout for NAVIGATE, page loads, and WAIT FOR RESPONSE. NAVIGATE that runs out of it fails, unless the document has already been parsed, in which case the hunt continues with a warning. The wait for a page a CLICK started loading is cut off at it without failing the step. 0 removes the limit for NAVIGATE and page loads, and leaves WAIT FOR RESPONSE with the step timeout. In milliseconds. Environment variable: MANUL_NAV_TIMEOUT.",
+      "minimum": 0,
+      "default": 30000
+    },
+    "disable_cache": {
+      "type": "boolean",
+      "description": "Turn off the DOM snapshot cache, so every command probes the page afresh instead of reusing the snapshot taken earlier in the step. MANUL_SEMANTIC_CACHE_ENABLED is accepted as its inverse (false disables the cache) and wins when both are set; there is no semantic_cache_enabled JSON key. Environment variable: MANUL_DISABLE_CACHE.",
+      "default": false
+    },
+    "verbose": {
+      "type": "boolean",
+      "description": "Verbose engine logging. Environment variable: MANUL_VERBOSE.",
+      "default": false
+    },
+    "debug_mode": {
+      "type": "boolean",
+      "description": "Pause before every step, as --debug does. Environment variable: MANUL_DEBUG.",
+      "default": false
+    },
+    "break_lines": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      },
+      "description": ".hunt line numbers to pause at, as --break-lines does. JSON only.",
+      "default": []
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Run only hunt files whose @tags: header shares at least one tag, as --tags does. Env: comma-separated. Environment variable: MANUL_TAGS.",
+      "default": []
+    },
+    "workers": {
+      "type": "integer",
+      "description": "Max hunt files to run in parallel. Each worker spawns a separate subprocess with its own browser. Forced to 1 when --debug or --break-lines is active. Environment variable: MANUL_WORKERS.",
+      "minimum": 1,
+      "default": 1
+    },
+    "tests_home": {
+      "type": "string",
+      "description": "Loaded and overridable, but no command reads it yet: SCAN PAGE and `manul scan` write where they are told, and nothing else consults it. Environment variable: MANUL_TESTS_HOME.",
+      "default": "tests"
+    },
+    "auto_annotate": {
+      "type": "boolean",
+      "description": "After each NAVIGATE, log '📍 Auto-Nav: <name>' with the page name the pages/ registry gives the URL (the URL itself when it has none). Only NAVIGATE is annotated, not a page a click led to. Log output only — no .hunt file is modified. Environment variable: MANUL_AUTO_ANNOTATE.",
+      "default": false
+    },
     "retries": {
       "type": "integer",
       "description": "Number of times to retry a failed hunt file. Pass on retry marks status as 'flaky'. Environment variable: MANUL_RETRIES.",
+      "minimum": 0,
       "default": 0
     },
     "screenshot": {
       "type": "string",
+      "description": "Screenshot capture mode for hunt runs: PNG files under screenshots/ in the working directory, recorded on each step result as screenshot_path and linked from the HTML report. Environment variable: MANUL_SCREENSHOT.",
       "enum": [
         "on-fail",
         "always",
         "none"
       ],
-      "description": "Screenshot capture mode for hunt runs: PNG files under screenshots/ in the working directory, recorded on each step result as screenshot_path and linked from the HTML report. Environment variable: MANUL_SCREENSHOT."
+      "default": "on-fail"
     },
     "html_report": {
       "type": "boolean",
-      "description": "Generate self-contained HTML report after the run (reports/manul_report.html). Recent invocations merged via report session state. Environment variable: MANUL_HTML_REPORT.",
+      "description": "Write a self-contained HTML report per hunt — per row for a hunt with @data: — as reports/report_<title>_<YYYYMMDD_HHMMSS>_<seq>.html. There is no aggregate report and no merging across invocations. Environment variable: MANUL_HTML_REPORT.",
       "default": false
+    },
+    "verify_max_retries": {
+      "type": "integer",
+      "description": "Maximum polling retries for VERIFY steps before declaring failure. Each retry waits ~1.0s for checked/enabled/disabled state verification and ~1.5s for text presence verification. Environment variable: MANUL_VERIFY_MAX_RETRIES.",
+      "minimum": 1,
+      "default": 15
     },
     "explain_mode": {
       "type": "boolean",

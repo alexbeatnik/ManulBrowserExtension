@@ -9,8 +9,9 @@ export const RE_HEADER = /^\s*@(\w+)\s*:\s*(.*)$/;
 export const RE_COMMENT = /^\s*#/;
 export const RE_BLOCK_OPEN = /^\s*\[(SETUP|TEARDOWN)\]\s*$/i;
 export const RE_BLOCK_CLOSE = /^\s*\[END\s+(SETUP|TEARDOWN)\]\s*$/i;
-export const RE_OPENER = /^\s*(IF|REPEAT|FOR\s+EACH|WHILE)\b.*:\s*$/i;
-export const RE_BRANCH = /^\s*(ELIF\b.*|ELSE)\s*:\s*$/i;
+// A block line may carry a trailing `# comment` after its colon.
+export const RE_OPENER = /^\s*(IF|REPEAT|FOR\s+EACH|WHILE)\b.*:\s*(?:#\s.*)?$/i;
+export const RE_BRANCH = /^\s*(ELIF\b.*|ELSE)\s*:\s*(?:#\s.*)?$/i;
 export const RE_END = /^\s*END\s*(IF|REPEAT|WHILE|FOR|EACH)\b.*$/i;
 export const RE_CALL = /^\s*CALL\s+(?:HOST|PYTHON|GO|JS|NODE)\s+([\w.\-]+)/i;
 
@@ -48,6 +49,15 @@ export const normalise = (s: string): string => s.trim().replace(/\s+/g, ' ');
 
 /** A list number in front of a command (`3. CLICK …`) is not part of it. */
 const stripListNumber = (s: string): string => s.replace(/^\d+\.\s+/, '');
+
+/**
+ * Whether a line of the file is the step the engine reported. The engine
+ * reports a step without its trailing `# comment`, so a line that is the
+ * reported text followed by ` # …` is that step too. Which `#` starts a
+ * comment is the engine's decision; this only accepts the text it sent.
+ */
+export const isReportedStep = (line: string, reported: string): boolean =>
+  line === reported || (line.startsWith(reported) && /^ # /.test(line.slice(reported.length)));
 
 export function parseHunt(text: string): HuntOutline {
   const lines = text.split(/\r?\n/);
@@ -145,7 +155,7 @@ export class StepLocator {
     const search = (requireBlock: boolean): number | undefined => {
       for (let n = 0; n < cmds.length; n++) {
         const i = (this.cursor + n) % cmds.length;
-        if (cmds[i].text !== wanted) continue;
+        if (!isReportedStep(cmds[i].text, wanted)) continue;
         if (requireBlock && cmds[i].step !== blockIndex) continue;
         this.cursor = i + 1;
         return cmds[i].line;
@@ -163,6 +173,28 @@ export class StepLocator {
 }
 
 const INDENT = 4;
+
+/**
+ * The indentation a step inserted on blank line `at` should have: the line's
+ * own, if it has any, else what the line above it calls for — one level in
+ * under a STEP or a block opener, the same as a command above, none after
+ * DONE or a header.
+ */
+export function indentForInsert(lines: string[], at: number): string {
+  const own = lines[at]?.match(/^\s*/)?.[0] ?? '';
+  if (own) return own;
+  for (let i = at - 1; i >= 0; i--) {
+    const text = lines[i];
+    if (!text.trim()) continue;
+    const indent = text.match(/^\s*/)?.[0] ?? '';
+    if (RE_COMMENT.test(text)) return indent;
+    if (RE_DONE.test(text) || RE_BLOCK_CLOSE.test(text) || RE_HEADER.test(text)) return '';
+    if (RE_STEP.test(text) || RE_BLOCK_OPEN.test(text)) return ' '.repeat(INDENT);
+    if (RE_OPENER.test(text) || RE_BRANCH.test(text)) return indent + ' '.repeat(INDENT);
+    return indent;
+  }
+  return '';
+}
 
 /**
  * Re-indent a hunt: headers, STEP lines, block markers and DONE at the margin,

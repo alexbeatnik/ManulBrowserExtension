@@ -153,6 +153,12 @@
         "icon": "$(eye)"
       },
       {
+        "command": "manulBrowser.debugVars",
+        "title": "Debug: Show Variables",
+        "category": "Manul",
+        "icon": "$(symbol-variable)"
+      },
+      {
         "command": "manulBrowser.newHunt",
         "title": "New Hunt File",
         "category": "Manul",
@@ -264,9 +270,14 @@
           "group": "navigation@4"
         },
         {
+          "command": "manulBrowser.debugVars",
+          "when": "resourceLangId == hunt && manulBrowser.paused",
+          "group": "navigation@5"
+        },
+        {
           "command": "manulBrowser.stop",
           "when": "resourceLangId == hunt && manulBrowser.running",
-          "group": "navigation@5"
+          "group": "navigation@6"
         }
       ],
       "editor/context": [
@@ -348,6 +359,10 @@
           "when": "manulBrowser.paused"
         },
         {
+          "command": "manulBrowser.debugVars",
+          "when": "manulBrowser.paused"
+        },
+        {
           "command": "manulBrowser.stop",
           "when": "manulBrowser.running"
         }
@@ -417,7 +432,7 @@
             "firefox"
           ],
           "enumDescriptions": [
-            "Whatever manul.config.json says (Chromium when it says nothing)",
+            "Whatever manul.config.json or MANUL_BROWSER says (Chromium when neither does)",
             "Chromium, driven over CDP",
             "Firefox, driven over WebDriver BiDi"
           ],
@@ -430,6 +445,12 @@
           "default": "",
           "scope": "resource",
           "markdownDescription": "Browser channel, for example `chrome`, `msedge`, `firefox-dev`. Leave empty for the engine's default."
+        },
+        "manulBrowser.run.locale": {
+          "type": "string",
+          "default": "",
+          "scope": "resource",
+          "markdownDescription": "Language the browser uses and asks pages for, as a tag such as `en-US` or `uk-UA` (passed as `--locale`). Chromium and Firefox are given the same one. Leave empty for `locale` in `manul.config.json`, `MANUL_LOCALE`, or the engine's default, `en-US`. Needs engine 0.1.6 or later."
         },
         "manulBrowser.run.headless": {
           "type": "string",
@@ -471,7 +492,7 @@
           "type": "boolean",
           "default": false,
           "scope": "resource",
-          "description": "Write reports/manul_report.html after each run."
+          "description": "Write an HTML report for each hunt under reports/ (report_<title>_<time>_<n>.html). Open the newest with Manul: Open HTML Report."
         },
         "manulBrowser.run.explain": {
           "type": "boolean",

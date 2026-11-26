@@ -287,6 +287,24 @@ export function parseVersion(output: string): string {
   return m ? m[1] : '';
 }
 
+/**
+ * The engine this extension is written against. An older one still runs, with
+ * what it lacks left out; the Doctor says what that costs.
+ */
+export const RECOMMENDED_ENGINE = '0.1.6';
+
+/** `0.1.10` vs `0.1.9` → 1. Pre-release and build suffixes are ignored. */
+export function compareVersions(a: string, b: string): number {
+  const parts = (v: string): number[] => v.replace(/^v/, '').split(/[-+]/)[0].split('.').map((n) => parseInt(n, 10) || 0);
+  const x = parts(a);
+  const y = parts(b);
+  for (let i = 0; i < Math.max(x.length, y.length); i++) {
+    const d = (x[i] ?? 0) - (y[i] ?? 0);
+    if (d) return Math.sign(d);
+  }
+  return 0;
+}
+
 /** Flag names out of Go's `flag` usage text: `  -hooks string`. */
 export function parseFlags(help: string): Set<string> {
   const flags = new Set<string>();

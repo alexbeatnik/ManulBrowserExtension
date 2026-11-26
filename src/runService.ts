@@ -14,6 +14,7 @@ import {
   HuntResult,
   HuntRun,
   StepResult,
+  VarsEvent,
   buildArgs,
   formatDuration,
   stripAnsi,
@@ -25,6 +26,8 @@ export interface RunCallbacks {
   /** `line` is 0-based, undefined when the step could not be placed. */
   onStep?(step: StepResult, line: number | undefined): void;
   onLog?(line: string): void;
+  /** The answer to `vars` at a pause. */
+  onVars?(vars: VarsEvent): void;
 }
 
 export interface RunOutcome {
@@ -50,6 +53,7 @@ interface Active {
 export class RunService implements vscode.Disposable {
   private readonly active = new Map<string, Active>();
   private pausedFile?: string;
+  private readonly varsListeners = new Set<(vars: VarsEvent) => void>();
   private readonly changed = new vscode.EventEmitter<void>();
   /** Fires when a run starts, pauses, resumes or ends. */
   readonly onDidChange = this.changed.event;
@@ -90,6 +94,12 @@ export class RunService implements vscode.Disposable {
   stop(uri?: vscode.Uri): void {
     if (!uri) return this.stopAll();
     this.active.get(uri.fsPath)?.run.stop();
+  }
+
+  /** Called with the runtime variables each time a paused engine reports them. */
+  onVars(listener: (vars: VarsEvent) => void): vscode.Disposable {
+    this.varsListeners.add(listener);
+    return new vscode.Disposable(() => this.varsListeners.delete(listener));
   }
 
   /** Answer the current pause. */
@@ -185,6 +195,7 @@ export class RunService implements vscode.Disposable {
       {
         browser: s.browser,
         channel: s.channel,
+        locale: s.locale,
         // Stepping through a page nobody can see is not debugging.
         headless: opts.debug ? false : s.headless,
         retries: opts.debug ? 0 : s.retries,
@@ -232,6 +243,13 @@ export class RunService implements vscode.Disposable {
       if (lastPauseLine !== undefined) this.results.setPaused(file, lastPauseLine, e);
       log(`  explain: ${e.step} → score ${e.score.toFixed(3)}${e.explanation ? ` — ${e.explanation}` : ''}`);
     });
+    run.on('vars', (vars) => {
+      const names = Object.keys(vars).sort();
+      log(names.length ? '  variables:' : '  variables: none');
+      for (const name of names) log(`    {${name}} = ${vars[name]}`);
+      opts.onVars?.(vars);
+      this.varsListeners.forEach((l) => l(vars));
+    });
     run.on('pause', (p) => {
       // The engine repeats the marker after `explain` and `highlight`; only
       // a new index is a new position.
@@ -267,11 +285,13 @@ export class RunService implements vscode.Disposable {
       error = `The engine exited with code ${exit.code} before reporting a result.`;
     }
 
-    if (result) {
+    if (run.stopped) {
+      // A stopped run may still send a result, and it says nothing about the
+      // steps that never ran.
+      log('■ stopped');
+    } else if (result) {
       const verdict = result.success ? (result.flaky ? 'FLAKY' : 'PASS') : 'FAIL';
       log(`■ ${verdict}  ${result.passed}/${result.total_steps} steps  ${formatDuration(result.total_duration_ms || durationMs)}`);
-    } else if (run.stopped) {
-      log('■ stopped');
     } else if (error) {
       log(`■ ${error}`);
     }
@@ -312,6 +332,7 @@ export class RunService implements vscode.Disposable {
       {
         browser: s.browser,
         channel: s.channel,
+        locale: s.locale,
         headless: s.headless,
         retries: s.retries,
         screenshot: s.screenshot,
