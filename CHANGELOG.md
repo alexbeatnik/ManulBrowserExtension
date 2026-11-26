@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.1
 
 Brought up to the `manul-browser` engine 0.1.6.
 
